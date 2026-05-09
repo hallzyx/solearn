@@ -1,6 +1,6 @@
 # Solearn — Product Brief
 
-> Duelo de estudio on-chain con IA. Apostá a lo que sabés.
+> Solearn convierte estudiar para la U en un duelo 1vs1 donde ambos apuestan dinero y una IA hace de profesor y árbitro.
 
 ---
 

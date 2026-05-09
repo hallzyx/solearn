@@ -1,0 +1,321 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useWalletSession } from "@solana/react-hooks";
+import { Swords, ArrowLeft, AlertTriangle } from "lucide-react";
+import { z } from "zod";
+
+// ─── Constants ───
+
+const STAKE_OPTIONS = [
+  { label: "0.5 USDC", value: 0.5 },
+  { label: "1 USDC", value: 1 },
+  { label: "2 USDC", value: 2 },
+  { label: "5 USDC", value: 5 },
+] as const;
+
+const QUESTION_OPTIONS = [
+  { label: "3 (rápido)", value: 3 },
+  { label: "5 (default)", value: 5 },
+  { label: "10 (completo)", value: 10 },
+] as const;
+
+const TIME_OPTIONS = [
+  { label: "3 min (rápido)", value: 180 },
+  { label: "5 min (default)", value: 300 },
+  { label: "10 min (completo)", value: 600 },
+] as const;
+
+// ─── Schema ───
+
+const createDuelSchema = z.object({
+  courseName: z.string().min(3, "Mínimo 3 caracteres").max(100, "Máximo 100 caracteres"),
+  topic: z.string().min(3, "Mínimo 3 caracteres").max(200, "Máximo 200 caracteres"),
+  stakeAmount: z.number().positive("Seleccioná un monto"),
+  questionCount: z.number().min(3).max(10),
+  timeLimit: z.number().min(180).max(600),
+});
+
+type FormData = z.infer<typeof createDuelSchema>;
+
+// ─── Component ───
+
+export default function CreateDuelPage() {
+  const router = useRouter();
+  const session = useWalletSession();
+  const address = session?.account?.address;
+
+  const [form, setForm] = useState<FormData>({
+    courseName: "",
+    topic: "",
+    stakeAmount: 1,
+    questionCount: 5,
+    timeLimit: 300,
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [step, setStep] = useState<"form" | "generating" | "confirm">("form");
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const updateField = useCallback(
+    <K extends keyof FormData>(key: K, value: FormData[K]) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
+      // Clear error on change
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    },
+    [],
+  );
+
+  const validate = useCallback(() => {
+    const result = createDuelSchema.safeParse(form);
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof FormData, string>> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof FormData;
+        if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+      }
+      setErrors(fieldErrors);
+      return null;
+    }
+    setErrors({});
+    return result.data;
+  }, [form]);
+
+  const handleSubmit = useCallback(async () => {
+    const data = validate();
+    if (!data) return;
+
+    if (!address) {
+      alert("Conectá tu wallet primero");
+      return;
+    }
+
+    setStep("generating");
+
+    // Simulated: call backend API to generate quiz
+    // In real MVP: POST /api/duels → IA generates quiz → get duel_id
+    await new Promise((r) => setTimeout(r, 2000));
+
+    // Simulated: after quiz generated, send tx to Solana
+    setStep("confirm");
+    setTxHash("SIMULATED_TX_HASH_123");
+  }, [validate, address]);
+
+  const isConnected = !!address;
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 py-8">
+      {/* Back */}
+      <button
+        onClick={() => router.push("/")}
+        className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-brand-violet"
+      >
+        <ArrowLeft size={16} strokeWidth={3} />
+        Volver
+      </button>
+
+      <div className="grid gap-8 lg:grid-cols-5">
+        {/* ─── Form ─── */}
+        <div className="lg:col-span-3">
+          <div className="heavy-card">
+            <div className="mb-6 flex items-center gap-3">
+              <Swords size={24} strokeWidth={3} className="text-brand-jade" />
+              <h2 className="heading-lg">CREAR DUELO</h2>
+            </div>
+
+            {step === "form" && (
+              <div className="space-y-5">
+                {/* Course Name */}
+                <Field label="Nombre del curso" error={errors.courseName}>
+                  <input
+                    className="w-full border-2 border-brand-black bg-surface p-3 text-sm font-medium uppercase tracking-wide placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-brand-black"
+                    placeholder="Ej: TECNOLOGÍAS EMERGENTES"
+                    value={form.courseName}
+                    onChange={(e) => updateField("courseName", e.target.value.toUpperCase())}
+                  />
+                </Field>
+
+                {/* Topic */}
+                <Field label="Tema del duelo" error={errors.topic}>
+                  <input
+                    className="w-full border-2 border-brand-black bg-surface p-3 text-sm font-medium uppercase tracking-wide placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-brand-black"
+                    placeholder="Ej: TEORÍA BÁSICA DE BLOCKCHAIN"
+                    value={form.topic}
+                    onChange={(e) => updateField("topic", e.target.value.toUpperCase())}
+                  />
+                </Field>
+
+                {/* Stake */}
+                <Field label="Garantía (stake)" error={errors.stakeAmount}>
+                  <div className="grid grid-cols-4 gap-2">
+                    {STAKE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateField("stakeAmount", opt.value)}
+                        className={`border-2 px-3 py-2 text-xs font-bold uppercase tracking-wide transition-all ${
+                          form.stakeAmount === opt.value
+                            ? "border-brand-black bg-brand-jade text-black"
+                            : "border-brand-gray bg-white text-muted-foreground hover:border-brand-black"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Question Count */}
+                <Field label="Cantidad de preguntas" error={errors.questionCount}>
+                  <div className="grid grid-cols-3 gap-2">
+                    {QUESTION_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateField("questionCount", opt.value)}
+                        className={`border-2 px-3 py-2 text-xs font-bold uppercase tracking-wide transition-all ${
+                          form.questionCount === opt.value
+                            ? "border-brand-black bg-brand-jade text-black"
+                            : "border-brand-gray bg-white text-muted-foreground hover:border-brand-black"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Time Limit */}
+                <Field label="Tiempo límite" error={errors.timeLimit}>
+                  <div className="grid grid-cols-3 gap-2">
+                    {TIME_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateField("timeLimit", opt.value)}
+                        className={`border-2 px-3 py-2 text-xs font-bold uppercase tracking-wide transition-all ${
+                          form.timeLimit === opt.value
+                            ? "border-brand-black bg-brand-jade text-black"
+                            : "border-brand-gray bg-white text-muted-foreground hover:border-brand-black"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Wallet warning */}
+                {!isConnected && (
+                  <div className="flex items-start gap-2 border-2 border-brand-black bg-brand-violet/10 p-3">
+                    <AlertTriangle size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-brand-violet" />
+                    <p className="label-meta text-brand-violet">
+                      Conectá tu wallet para crear el duelo.
+                    </p>
+                  </div>
+                )}
+
+                {/* Submit */}
+                <button
+                  onClick={handleSubmit}
+                  disabled={!isConnected}
+                  className="btn-jade w-full justify-center !py-3"
+                >
+                  <Swords size={16} strokeWidth={3} />
+                  CREAR DUELO
+                </button>
+              </div>
+            )}
+
+            {step === "generating" && (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="mb-4 h-8 w-8 animate-spin border-2 border-brand-black border-t-brand-jade" />
+                <p className="heading-lg">GENERANDO QUIZ</p>
+                <p className="label-meta mt-2 text-muted-foreground">
+                  La IA está preparando las preguntas...
+                </p>
+              </div>
+            )}
+
+            {step === "confirm" && (
+              <div className="py-8 text-center">
+                <div className="mb-4 inline-flex h-16 w-16 items-center justify-center border-2 border-brand-black bg-brand-jade">
+                  <Swords size={32} strokeWidth={3} />
+                </div>
+                <p className="heading-lg mb-2">DUELO CREADO</p>
+                <p className="label-meta mb-6 text-muted-foreground">
+                  TX: {txHash?.slice(0, 16)}...
+                </p>
+                <button
+                  onClick={() => router.push("/")}
+                  className="btn-violet"
+                >
+                  VOLVER AL INICIO
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Preview ─── */}
+        <div className="lg:col-span-2">
+          <div className="heavy-card sticky top-8">
+            <span className="label-meta mb-4 block text-muted-foreground">
+              ⚔️ PREVIEW DEL DUELO
+            </span>
+            <div className="space-y-3 border-t-2 border-brand-gray pt-4">
+              <PreviewRow label="Retador" value={address ? `${address.slice(0, 6)}..${address.slice(-4)}` : "— (conectar wallet)"} />
+              <PreviewRow label="Curso" value={form.courseName || "—"} />
+              <PreviewRow label="Tema" value={form.topic || "—"} />
+              <PreviewRow label="Garantía" value={`${form.stakeAmount} USDC`} />
+              <PreviewRow label="Preguntas" value={`${form.questionCount}`} />
+              <PreviewRow label="Tiempo" value={`${form.timeLimit / 60} min`} />
+            </div>
+            <div className="mt-4 border-t-2 border-brand-gray pt-3">
+              <span className="label-meta text-muted-foreground">
+                ID: PREVIEW — en vivo
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Helpers ───
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="label-meta mb-2 block text-muted-foreground">{label}</label>
+      {children}
+      {error && (
+        <p className="mt-1 text-xs font-bold uppercase tracking-wide text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PreviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="label-meta text-muted-foreground">{label}</span>
+      <span className="text-sm font-bold uppercase tracking-tight">{value}</span>
+    </div>
+  );
+}
