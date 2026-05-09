@@ -1,0 +1,21 @@
+[toolchain]
+package_manager = "yarn"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+solearn_duel = "Cj6wPBbQoBZW9GbgAcUtfJEiJZiawiRKzk9JXLTzkfUR"
+
+[programs.localnet]
+solearn_duel = "4KyQfHUEyqHyZ7Q63qMSY4m75KsX3VtuqZeye2hHsjkt"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]
