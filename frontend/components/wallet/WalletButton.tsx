@@ -7,8 +7,9 @@ import {
   useBalance,
   useSplToken,
 } from "@solana/react-hooks";
-import { Wallet, Copy, Check, ChevronDown, ExternalLink } from "lucide-react";
+import { Wallet, Copy, Check, ChevronDown } from "lucide-react";
 import { USDC_MINT, LAMPORTS_PER_SOL } from "@/lib/solana";
+import { useRefreshStore } from "@/store/refreshStore";
 
 /**
  * Single wallet button that expands into a dropdown with balances,
@@ -21,6 +22,15 @@ export function WalletButton() {
 
   const sol = useBalance(address);
   const usdc = useSplToken(USDC_MINT, { owner: address });
+
+  const refreshCounter = useRefreshStore((s) => s.counter);
+
+  // Refresh balances when the store signals a transaction occurred
+  useEffect(() => {
+    if (refreshCounter > 0 && isConnected) {
+      usdc.refresh?.().catch(() => {});
+    }
+  }, [refreshCounter]); // eslint-disable-line
 
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);

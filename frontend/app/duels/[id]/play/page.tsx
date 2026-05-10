@@ -6,6 +6,7 @@ import { useWalletSession } from "@solana/react-hooks";
 import { Swords, Clock, AlertTriangle, User } from "lucide-react";
 import { getDuelQuestions, submitAnswer, getDuelDetail } from "@/lib/api";
 import type { SanitizedQuestion, DuelDetail } from "@/lib/api";
+import { useDuelSync } from "@/hooks/useDuelSync";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -34,12 +35,12 @@ export default function QuizPlayPage({ params }: Props) {
   const [timeLimit, setTimeLimit] = useState(300);
   const [timeLeft, setTimeLeft] = useState(300);
   const [finished, setFinished] = useState(false);
-  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
-  const [opponentProgress, setOpponentProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playerRole, setPlayerRole] = useState<"challenger" | "opponent">("challenger");
   const finishedRef = useRef(false);
+
+  const { signalFinished } = useDuelSync(id, playerRole);
 
   // Fetch questions + determine player role on mount
   useEffect(() => {
@@ -72,54 +73,14 @@ export default function QuizPlayPage({ params }: Props) {
           clearInterval(interval);
           finishedRef.current = true;
           setFinished(true);
-          setWaitingForOpponent(true);
-          setWaitingForOpponent(true);
+          signalFinished();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [finished, loading, error]);
-
-  // Reliable polling — checks every 1s, redirects when both players are done
-  useEffect(() => {
-    if (!waitingForOpponent || questions.length === 0) return;
-
-    let active = true;
-    const TOTAL = questions.length;
-
-    const poll = async () => {
-      if (!active) return;
-      try {
-        const duel = await getDuelDetail(id);
-        if (!active) return;
-
-        // Determine the OTHER player's progress based on my role
-        const theirRole = playerRole === "challenger" ? "opponent" : "challenger";
-        const theirAnswers = theirRole === "challenger" ? duel.challengerAnswers : duel.opponentAnswers;
-        const theirCount = theirAnswers?.length ?? 0;
-
-        setOpponentProgress(theirCount);
-
-        // Redirect when they've also answered all questions
-        if (theirCount >= TOTAL || duel.status === "COMPLETED" || duel.status === "READY_TO_RESOLVE" || duel.status === "TIMED_OUT") {
-          router.push(`/duels/${id}/result`);
-          return;
-        }
-
-        // Continue polling
-        if (active) setTimeout(poll, 1000);
-      } catch {
-        // network error — retry
-        if (active) setTimeout(poll, 2000);
-      }
-    };
-
-    // Start after a short initial delay (allow answer to save server-side)
-    const initial = setTimeout(poll, 1500);
-    return () => { active = false; clearTimeout(initial); };
-  }, [waitingForOpponent, id, questions.length, router, playerRole]);
+  }, [finished, loading, error, signalFinished]);
 
   // Submit answer to API + local state
   const handleSelect = useCallback(
@@ -146,6 +107,7 @@ export default function QuizPlayPage({ params }: Props) {
           if (!finishedRef.current) {
             finishedRef.current = true;
             setFinished(true);
+            signalFinished();
           }
         }, 500);
       }
@@ -184,7 +146,7 @@ export default function QuizPlayPage({ params }: Props) {
   const question = questions[currentQuestion];
   const selectedAnswer = question ? answers[question.id] : undefined;
 
-  // ─── Finished screen (waits for opponent) ───
+  // ─── Finished (waiting for opponent) ───
   if (finished) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
@@ -197,23 +159,16 @@ export default function QuizPlayPage({ params }: Props) {
             Respuestas: {answeredCount}/{totalQuestions}
           </p>
           <div className="mx-auto mb-4 h-2 w-full max-w-xs border-2 border-brand-black bg-white">
-            <div className="h-full bg-brand-jade transition-all" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-brand-jade" style={{ width: `${progress}%` }} />
           </div>
 
-          {/* Waiting for opponent */}
           <div className="mb-4 border-2 border-brand-gray p-4">
-            <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="flex items-center justify-center gap-2">
               <User size={16} strokeWidth={3} className="text-brand-violet" />
               <p className="label-meta">ESPERANDO A TU RIVAL</p>
             </div>
-            <div className="h-2 w-full max-w-xs mx-auto border-2 border-brand-black bg-white">
-              <div
-                className="h-full bg-brand-violet transition-all"
-                style={{ width: `${(opponentProgress / totalQuestions) * 100}%` }}
-              />
-            </div>
             <p className="label-meta mt-2 text-muted-foreground">
-              {opponentProgress}/{totalQuestions} respondidas
+              Serás redirigido automáticamente cuando termine.
             </p>
           </div>
 
@@ -222,10 +177,7 @@ export default function QuizPlayPage({ params }: Props) {
             <span className={`text-sm font-bold uppercase tracking-tight ${timerColor}`}>{formatTime(timeLeft)}</span>
           </div>
 
-          <button
-            onClick={() => router.push(`/duels/${id}/result`)}
-            className="btn-violet"
-          >
+          <button onClick={() => router.push(`/duels/${id}/result`)} className="btn-violet">
             VER RESULTADOS (FORZAR)
           </button>
         </div>

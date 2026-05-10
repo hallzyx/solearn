@@ -19,6 +19,16 @@ export async function POST(
     }
 
     if (duel.status !== "ACCEPTED" && duel.status !== "IN_PROGRESS" && duel.status !== "READY_TO_RESOLVE") {
+      // If already resolved, return existing scores
+      if (duel.status === "COMPLETED" || duel.status === "TIMED_OUT") {
+        return NextResponse.json({
+          id: duel.id,
+          status: duel.status,
+          challengerScore: duel.challengerScore,
+          opponentScore: duel.opponentScore,
+          winner: duel.winner,
+        });
+      }
       return NextResponse.json({ error: `Cannot resolve in status: ${duel.status}` }, { status: 400 });
     }
 

@@ -7,6 +7,7 @@ import { ArrowLeft, Swords, AlertTriangle, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { getDuelDetail, confirmAcceptDuel } from "@/lib/api";
 import { useAcceptDuel } from "@/hooks/useProgram";
+import { useRefreshStore } from "@/store/refreshStore";
 import type { DuelDetail as DuelDetailType } from "@/lib/api";
 
 type Props = {
@@ -26,6 +27,8 @@ export default function DuelDetailPage({ params }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const acceptDuelTx = useAcceptDuel();
+
+  const triggerBalanceRefresh = useRefreshStore((s) => s.triggerBalanceRefresh);
 
   useEffect(() => {
     getDuelDetail(id)
@@ -105,6 +108,7 @@ export default function DuelDetailPage({ params }: Props) {
           onChainDuelId: duel.onChainDuelId,
         }).catch(() => {});
         setAccepted(true);
+        triggerBalanceRefresh();
         return;
       }
 
@@ -112,7 +116,8 @@ export default function DuelDetailPage({ params }: Props) {
       try {
         const updated = await getDuelDetail(duel.id);
         if (updated.status === "ACCEPTED") {
-          setAccepted(true);
+      setAccepted(true);
+      triggerBalanceRefresh();
           return;
         }
       } catch {}

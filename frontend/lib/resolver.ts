@@ -93,10 +93,15 @@ async function sendTx(
   const tx = new Transaction().add(instruction);
 
   console.log(`Sending ${ixName}... resolver: ${signer.publicKey.toBase58()}`);
-  const sig = await sendAndConfirmTransaction(connection, tx, [signer], {
-    commitment: "confirmed",
-    skipPreflight: false,
-  });
+  const sig = await Promise.race([
+    sendAndConfirmTransaction(connection, tx, [signer], {
+      commitment: "processed",
+      skipPreflight: true,
+    }),
+    new Promise<string>((_, reject) =>
+      setTimeout(() => reject(new Error("On-chain resolve timeout (10s)")), 10000),
+    ),
+  ]);
 
   console.log(`Tx confirmed: ${sig}`);
   return sig;

@@ -73,3 +73,47 @@ export async function POST(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// ─── GET: Return answers with correct answers (only if duel is resolved) ───
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  try {
+    const duel = await findDuel(id);
+    if (!duel) {
+      return NextResponse.json({ error: "Duel not found" }, { status: 404 });
+    }
+
+    // Only expose correct answers after the duel is resolved
+    if (duel.status !== "COMPLETED" && duel.status !== "READY_TO_RESOLVE" && duel.status !== "TIMED_OUT") {
+      return NextResponse.json({ error: "Duel not yet resolved" }, { status: 400 });
+    }
+
+    // Return full questions with correct answers + both players' selected answers
+    const questions = duel.questions.map((q) => {
+      const ca = duel.challengerAnswers?.find((a) => a.questionId === q.id);
+      const oa = duel.opponentAnswers?.find((a) => a.questionId === q.id);
+      return {
+        id: q.id,
+        text: q.text,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        challengerSelected: ca?.selectedIndex ?? null,
+        opponentSelected: oa?.selectedIndex ?? null,
+      };
+    });
+
+    return NextResponse.json({
+      duelId: duel.duelId,
+      questions,
+      challengerScore: duel.challengerScore,
+      opponentScore: duel.opponentScore,
+    });
+  } catch (error) {
+    console.error("GET /api/duels/[id]/answers error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

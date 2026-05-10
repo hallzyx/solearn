@@ -9,6 +9,7 @@ import { createDuel, confirmCreateOnChain } from "@/lib/api";
 import { useCreateDuel } from "@/hooks/useProgram";
 import { generateDuelId } from "@/lib/solana-instructions";
 import { computePdas } from "@/lib/pdas";
+import { useRefreshStore } from "@/store/refreshStore";
 
 // ─── Constants ───
 
@@ -63,6 +64,7 @@ export default function CreateDuelPage() {
   const [duelId, setDuelId] = useState<string | null>(null);
 
   const createDuelTx = useCreateDuel();
+  const triggerBalanceRefresh = useRefreshStore((s) => s.triggerBalanceRefresh);
 
   const updateField = useCallback(
     <K extends keyof FormData>(key: K, value: FormData[K]) => {
@@ -153,6 +155,7 @@ export default function CreateDuelPage() {
             timeLimit: data.timeLimit,
           });
           console.log("✅ create_duel tx sent, sig:", createDuelTx.signature);
+          triggerBalanceRefresh();
 
           // Only sync DB when on-chain tx SUCCEEDED
           confirmCreateOnChain(result.id, {

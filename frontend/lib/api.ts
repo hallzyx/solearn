@@ -176,3 +176,10 @@ export function confirmCreateOnChain(
     body: JSON.stringify(body),
   });
 }
+
+/** Get detailed explanation for a duel (POST /api/duels/[id]/explain) */
+export function getExplanation(id: string): Promise<{ explanation: string; audio?: string }> {
+  return fetchJSON(`${BASE}/api/duels/${encodeURIComponent(id)}/explain`, {
+    method: "POST",
+  });
+}

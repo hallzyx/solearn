@@ -2,10 +2,12 @@
 
 import { use, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useWalletSession } from "@solana/react-hooks";
-import { Swords, Trophy, BookOpen, ExternalLink, ArrowLeft } from "lucide-react";
-import { getDuelDetail, resolveDuel } from "@/lib/api";
+import { useSplToken, useWalletSession } from "@solana/react-hooks";
+import { Swords, Trophy, BookOpen, ExternalLink, ArrowLeft, Lightbulb } from "lucide-react";
+import { getDuelDetail, resolveDuel, getExplanation } from "@/lib/api";
+import { useRefreshStore } from "@/store/refreshStore";
 import type { DuelDetail } from "@/lib/api";
+import { Markdown } from "@/components/ui/Markdown";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -40,26 +42,55 @@ export default function DuelResultPage({ params }: Props) {
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(false);
 
+  const triggerBalanceRefresh = useRefreshStore((s) => s.triggerBalanceRefresh);
+
+  // Explanation feature
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [explanationAudio, setExplanationAudio] = useState<string | null>(null);
+  const [explaining, setExplaining] = useState(false);
+  const [explainError, setExplainError] = useState<string | null>(null);
+  const [answersDetail, setAnswersDetail] = useState<any[] | null>(null);
+  const usdc = useSplToken("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", { owner: myAddress });
+
+  // Load duel data
   useEffect(() => {
     getDuelDetail(id)
-      .then((d) => {
-        setDuel(d);
-        // Auto-resolve if both have answers but no scores yet
-        const hasChallengerAnswers = (d.challengerAnswers ?? []).length >= d.questionCount;
-        const hasOpponentAnswers = (d.opponentAnswers ?? []).length >= d.questionCount;
-        if (
-          hasChallengerAnswers &&
-          hasOpponentAnswers &&
-          d.challengerScore === null &&
-          d.opponentScore === null &&
-          (d.status === "ACCEPTED" || d.status === "IN_PROGRESS" || d.status === "READY_TO_RESOLVE")
-        ) {
-          handleAutoResolve(d);
-        }
-      })
+      .then(setDuel)
       .catch(() => setDuel(null))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Fetch answer details when duel is resolved
+  useEffect(() => {
+    if (!duel || (duel.status !== "COMPLETED" && duel.status !== "READY_TO_RESOLVE" && duel.status !== "TIMED_OUT")) return;
+    fetch(`/api/duels/${encodeURIComponent(id)}/answers`)
+      .then((r) => r.json())
+      .then((data) => data.questions && setAnswersDetail(data.questions))
+      .catch(() => {});
+  }, [id, duel?.status]);
+
+  const handleGetExplanation = async () => {
+    setExplaining(true);
+    setExplainError(null);
+    try {
+      // Send 0.1 USDC as payment — use wallet session as authority signer
+      await usdc.send({
+        amount: "0.1",
+        destinationOwner: process.env.NEXT_PUBLIC_RESOLVER_PUBKEY!,
+        authority: session as any,
+      } as any);
+      triggerBalanceRefresh();
+
+      // After payment, fetch explanation
+      const result = await getExplanation(id);
+      setExplanation(result.explanation);
+      if (result.audio) setExplanationAudio(result.audio);
+    } catch (e: any) {
+      setExplainError(e?.message || "Error al procesar el pago o la explicación");
+    } finally {
+      setExplaining(false);
+    }
+  };
 
   const handleResolve = async () => {
     setResolving(true);
@@ -72,6 +103,7 @@ export default function DuelResultPage({ params }: Props) {
         opponentScore: result.opponentScore,
         winner: result.winner,
       } : null);
+      triggerBalanceRefresh();
     } catch (e) {
       console.error("Resolve failed:", e);
     } finally {
@@ -79,24 +111,6 @@ export default function DuelResultPage({ params }: Props) {
     }
   };
 
-  // Auto-resolve helper (called from useEffect to avoid dependency issues)
-  const handleAutoResolve = useCallback(async (_duel: DuelDetail) => {
-    setResolving(true);
-    try {
-      const result = await resolveDuel(id);
-      setDuel((prev) => prev ? {
-        ...prev,
-        status: result.status,
-        challengerScore: result.challengerScore,
-        opponentScore: result.opponentScore,
-        winner: result.winner,
-      } : null);
-    } catch (e) {
-      console.error("Auto-resolve failed:", e);
-    } finally {
-      setResolving(false);
-    }
-  }, [id]);
 
   if (loading) {
     return (
@@ -194,6 +208,42 @@ export default function DuelResultPage({ params }: Props) {
           </div>
         </div>
 
+        {/* Answer review */}
+        {answersDetail && answersDetail.length > 0 && (
+          <div className="mb-6 space-y-3 text-left">
+            <p className="label-meta text-muted-foreground">REVISIÓN DE RESPUESTAS</p>
+            {answersDetail.map((q: any) => {
+              const mySelected = amChallenger ? q.challengerSelected : q.opponentSelected;
+              const oppSelected = amChallenger ? q.opponentSelected : q.challengerSelected;
+              return (
+                <div key={q.id} className="border-2 border-brand-gray bg-surface p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide mb-2">
+                    P{q.id}. {q.text}
+                  </p>
+                  <div className="space-y-1">
+                    {q.options.map((opt: string, i: number) => (
+                      <p
+                        key={i}
+                        className={`text-xs pl-4 border-l-2 ${
+                          i === q.correctIndex
+                            ? "border-brand-jade bg-brand-jade/10 font-bold"
+                            : mySelected === i && i !== q.correctIndex
+                              ? "border-destructive bg-red-50"
+                              : "border-transparent"
+                        }`}
+                      >
+                        {String.fromCharCode(65 + i)}. {opt}
+                        {i === q.correctIndex && " ✓"}
+                        {mySelected === i && i !== q.correctIndex && " ✗ (tu respuesta)"}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="mb-6 space-y-1 text-left">
           <p className="label-meta text-muted-foreground">RESUMEN</p>
           <div className="rounded-none border-2 border-brand-gray bg-surface p-3">
@@ -207,6 +257,44 @@ export default function DuelResultPage({ params }: Props) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
+          {/* Explanation feature */}
+          <div className="w-full">
+            {!explanation && (
+              <button
+                onClick={handleGetExplanation}
+                disabled={explaining || !myAddress}
+                className="btn-violet w-full justify-center !py-3"
+              >
+                <Lightbulb size={16} strokeWidth={3} />
+                {explaining
+                  ? "PROCESANDO PAGO 0.1 USDC..."
+                  : "EXPLICACIÓN DETALLADA POR IA — 0.1 USDC"}
+              </button>
+            )}
+            {explainError && (
+              <p className="label-meta mt-2 text-destructive">{explainError}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Explanation content */}
+        {explanation && (
+          <div className="mb-6 border-2 border-brand-black bg-surface p-4 text-left">
+            <p className="label-meta mb-2 text-brand-violet">
+              <Lightbulb size={12} strokeWidth={3} className="inline" /> EXPLICACIÓN POR IA
+            </p>
+            <div className="max-h-96 overflow-y-auto mb-3">
+              <Markdown text={explanation} />
+            </div>
+            {explanationAudio && (
+              <audio controls className="w-full mt-2">
+                <source src={`data:audio/mpeg;base64,${explanationAudio}`} type="audio/mpeg" />
+              </audio>
+            )}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link href="/create" className="btn-jade flex-1 justify-center">
             <Swords size={16} strokeWidth={3} />
             PEDIR REVANCHA
