@@ -25,7 +25,6 @@ export function WalletButton() {
 
   const refreshCounter = useRefreshStore((s) => s.counter);
 
-  // Refresh balances when the store signals a transaction occurred
   useEffect(() => {
     if (refreshCounter > 0 && isConnected) {
       usdc.refresh?.().catch(() => {});
@@ -38,7 +37,6 @@ export function WalletButton() {
 
   const isConnected = status === "connected";
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -61,12 +59,10 @@ export function WalletButton() {
     }
   }, [address]);
 
-  // SSR guard
   if (!isReady) {
     return <div className="h-9 w-36 animate-pulse border-2 border-brand-gray bg-brand-gray" />;
   }
 
-  // Disconnected state
   if (!isConnected) {
     return (
       <>
@@ -76,20 +72,19 @@ export function WalletButton() {
           className="btn-jade !px-4 !py-2 !text-[10px]"
         >
           <Wallet size={14} strokeWidth={3} />
-          {status === "connecting" ? "CONECTANDO..." : "CONECTAR WALLET"}
+          {status === "connecting" ? "CONNECTING..." : "CONNECT WALLET"}
         </button>
 
-        {/* Wallet selection modal */}
         {modal.isOpen && (
           <>
             <div className="fixed inset-0 z-40 bg-black/50" onClick={modal.close} />
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="heavy-card w-full max-w-sm">
-                <p className="heading-lg mb-4">SELECCIONAR WALLET</p>
+                <p className="heading-lg mb-4">SELECT WALLET</p>
                 <div className="space-y-2">
                   {modal.connectors.length === 0 && (
                     <p className="label-meta text-muted-foreground">
-                      No se encontraron wallets. Instalá Phantom o Solflare.
+                      No wallets found. Install Phantom or Solflare.
                     </p>
                   )}
                   {modal.connectors.map((c) => (
@@ -99,15 +94,13 @@ export function WalletButton() {
                       disabled={status === "connecting"}
                       className="flex w-full items-center gap-3 border-2 border-brand-black bg-surface p-3 text-left text-sm font-bold uppercase tracking-wide transition-all hover:bg-brand-jade/20 disabled:opacity-40"
                     >
-                      {c.icon && (
-                        <img src={c.icon} alt={c.name} className="h-8 w-8" />
-                      )}
+                      {c.icon && <img src={c.icon} alt={c.name} className="h-8 w-8" />}
                       <span>{c.name}</span>
                     </button>
                   ))}
                 </div>
                 <button onClick={modal.close} className="btn-violet mt-4 w-full justify-center !py-2">
-                  CANCELAR
+                  CANCEL
                 </button>
               </div>
             </div>
@@ -117,7 +110,6 @@ export function WalletButton() {
     );
   }
 
-  // Connected state — single button + dropdown
   const short = address ? `${address.slice(0, 4)}..${address.slice(-4)}` : "";
 
   const solBalance = sol.lamports !== null
@@ -130,7 +122,6 @@ export function WalletButton() {
 
   return (
     <div ref={ref} className="relative">
-      {/* Trigger button */}
       <button
         onClick={() => setOpen((p) => !p)}
         className="btn-jade !px-3 !py-2 !text-[10px]"
@@ -144,10 +135,8 @@ export function WalletButton() {
         />
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute right-0 top-full mt-2 w-64 border-2 border-brand-black bg-white shadow-[6px_6px_0px_0px_#000] z-50">
-          {/* Address with copy */}
           <div className="border-b-2 border-brand-gray p-3">
             <div className="flex items-center justify-between">
               <span className="label-meta text-muted-foreground">ADDRESS</span>
@@ -160,15 +149,12 @@ export function WalletButton() {
                 ) : (
                   <Copy size={12} strokeWidth={3} />
                 )}
-                {copied ? "COPIADO" : "COPIAR"}
+                {copied ? "COPIED" : "COPY"}
               </button>
             </div>
-            <p className="mt-1 font-mono text-xs font-bold tracking-tight break-all">
-              {address}
-            </p>
+            <p className="mt-1 font-mono text-xs font-bold tracking-tight break-all">{address}</p>
           </div>
 
-          {/* Balances */}
           <div className="border-b-2 border-brand-gray p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="label-meta text-muted-foreground">SOL</span>
@@ -184,7 +170,6 @@ export function WalletButton() {
             </div>
           </div>
 
-          {/* Disconnect */}
           <button
             onClick={() => {
               setOpen(false);
@@ -192,7 +177,7 @@ export function WalletButton() {
             }}
             className="flex w-full items-center justify-center gap-2 border-b-2 border-brand-black bg-brand-gray p-3 text-xs font-bold uppercase tracking-wide hover:bg-destructive hover:text-white transition-colors"
           >
-            DESCONECTAR WALLET
+            DISCONNECT WALLET
           </button>
         </div>
       )}

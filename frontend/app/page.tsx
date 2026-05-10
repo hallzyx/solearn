@@ -31,13 +31,13 @@ export default function HomePage() {
           </span>
         </div>
         <h1 className="heading-display mb-4">
-          Duelo de estudio
+          On-chain study
           <br />
-          <span className="text-brand-violet">on-chain con IA</span>
+          <span className="text-brand-violet">duel with AI</span>
         </h1>
         <p className="mx-auto mb-8 max-w-lg text-base leading-relaxed text-muted-foreground">
-          Retá a un compañero, apostá USDC, y demostrá quién sabe más.
-          La IA genera las preguntas. Solana asegura el pozo.
+          Challenge a classmate, stake USDC, and prove who knows more.
+          AI generates the quiz. Solana secures the pot.
         </p>
 
         {/* Stats from real API */}
@@ -46,17 +46,17 @@ export default function HomePage() {
             <p className="heading-xl text-brand-violet">
               {loading ? "..." : duels.length}
             </p>
-            <p className="label-meta text-muted-foreground">Duelos abiertos</p>
+            <p className="label-meta text-muted-foreground">Open duels</p>
           </div>
           <div className="w-px bg-brand-gray" />
           <div>
-            <p className="heading-xl text-brand-violet">IA</p>
-            <p className="label-meta text-muted-foreground">Quiz generado</p>
+            <p className="heading-xl text-brand-violet">AI</p>
+            <p className="label-meta text-muted-foreground">Generated quiz</p>
           </div>
           <div className="w-px bg-brand-gray" />
           <div>
             <p className="heading-xl text-brand-violet">0</p>
-            <p className="label-meta text-muted-foreground">En juego</p>
+            <p className="label-meta text-muted-foreground">In play</p>
           </div>
         </div>
       </section>
@@ -66,18 +66,18 @@ export default function HomePage() {
         <Link href="/create" className="heavy-card group block no-underline">
           <div className="mb-4 flex items-center gap-3">
             <Swords size={32} strokeWidth={3} className="text-brand-jade" />
-            <span className="heading-lg">CREAR DUELO</span>
+            <span className="heading-lg">CREATE DUEL</span>
           </div>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            Elegí un tema, definí el stake y las preguntas. La IA genera el quiz al instante.
+            Pick a topic, set the stake and questions. AI generates the quiz instantly.
           </p>
-          <span className="btn-jade !px-4 !py-2 !text-[10px]">CREAR DUELO</span>
+          <span className="btn-jade !px-4 !py-2 !text-[10px]">CREATE DUEL</span>
           <div className="mt-4 flex items-center gap-4 border-t-2 border-brand-gray pt-3">
             <span className="label-meta text-muted-foreground">
-              <Coins size={10} strokeWidth={3} className="inline" /> Stake desde 0.5 USDC
+              <Coins size={10} strokeWidth={3} className="inline" /> Stake from 0.5 USDC
             </span>
             <span className="label-meta text-muted-foreground">
-              <Zap size={10} strokeWidth={3} className="inline" /> 3, 5 o 10 preg.
+              <Zap size={10} strokeWidth={3} className="inline" /> 3, 5 or 10 q.
             </span>
           </div>
         </Link>
@@ -85,15 +85,15 @@ export default function HomePage() {
         <Link href="/duels" className="heavy-card group block no-underline">
           <div className="mb-4 flex items-center gap-3">
             <Search size={32} strokeWidth={3} className="text-brand-violet" />
-            <span className="heading-lg">BUSCAR DUELOS</span>
+            <span className="heading-lg">FIND DUELS</span>
           </div>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            Encontrá duelos abiertos y aceptá el reto. Elegí el que más te guste.
+            Find open duels and accept the challenge. Pick the one you like.
           </p>
-          <span className="btn-violet !px-4 !py-2 !text-[10px]">VER DUELOS</span>
+          <span className="btn-violet !px-4 !py-2 !text-[10px]">VIEW DUELS</span>
           <div className="mt-4 flex items-center gap-4 border-t-2 border-brand-gray pt-3">
             <span className="label-meta text-muted-foreground">
-              {loading ? "..." : duels.length} duelos abiertos ahora
+              {loading ? "..." : duels.length} open duels now
             </span>
           </div>
         </Link>
@@ -101,7 +101,7 @@ export default function HomePage() {
 
       <footer className="mt-16 border-t-2 border-brand-gray pt-4 text-center">
         <p className="label-meta text-muted-foreground">
-          ID: SOL_001 · CONTRATO: Cj6wPBb…kfUR
+          ID: SOL_001 · CONTRACT: Cj6wPBb…kfUR
         </p>
       </footer>
     </div>

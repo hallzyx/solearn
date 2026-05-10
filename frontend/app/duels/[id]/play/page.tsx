@@ -42,12 +42,10 @@ export default function QuizPlayPage({ params }: Props) {
 
   const { signalFinished } = useDuelSync(id, playerRole);
 
-  // Fetch questions + determine player role on mount
   useEffect(() => {
     async function load() {
       try {
         const duel = await getDuelDetail(id);
-        // Determine if I'm challenger or opponent
         if (myAddress && duel.opponent && myAddress === duel.opponent) {
           setPlayerRole("opponent");
         }
@@ -64,7 +62,6 @@ export default function QuizPlayPage({ params }: Props) {
     load();
   }, [id, myAddress]);
 
-  // Timer
   useEffect(() => {
     if (finished || loading || error) return;
     const interval = setInterval(() => {
@@ -82,24 +79,19 @@ export default function QuizPlayPage({ params }: Props) {
     return () => clearInterval(interval);
   }, [finished, loading, error, signalFinished]);
 
-  // Submit answer to API + local state
   const handleSelect = useCallback(
     async (optionIndex: number) => {
       if (finished || questions.length === 0) return;
       const q = questions[currentQuestion];
 
-      // Optimistic local update
       setAnswers((prev) => ({ ...prev, [q.id]: optionIndex }));
 
-      // Submit to API with correct player role
       try {
         await submitAnswer(id, { player: playerRole, questionId: q.id, selectedIndex: optionIndex });
       } catch {
-        // Failed to save — still keep local answer
         console.warn("Answer save failed, kept locally");
       }
 
-      // Auto-advance
       if (currentQuestion < questions.length - 1) {
         setTimeout(() => setCurrentQuestion((p) => p + 1), 300);
       } else {
@@ -115,7 +107,6 @@ export default function QuizPlayPage({ params }: Props) {
     [currentQuestion, questions, finished, id],
   );
 
-  // ─── Loading ───
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-8">
@@ -128,13 +119,12 @@ export default function QuizPlayPage({ params }: Props) {
     );
   }
 
-  // ─── Error ───
   if (error || questions.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-        <p className="heading-lg mb-2">ERROR AL CARGAR</p>
-        <p className="label-meta mb-4 text-muted-foreground">{error || "No hay preguntas disponibles"}</p>
-        <button onClick={() => router.push(`/duels/${id}`)} className="btn-violet">VOLVER</button>
+        <p className="heading-lg mb-2">LOADING ERROR</p>
+        <p className="label-meta mb-4 text-muted-foreground">{error || "No questions available"}</p>
+        <button onClick={() => router.push(`/duels/${id}`)} className="btn-violet">GO BACK</button>
       </div>
     );
   }
@@ -146,7 +136,6 @@ export default function QuizPlayPage({ params }: Props) {
   const question = questions[currentQuestion];
   const selectedAnswer = question ? answers[question.id] : undefined;
 
-  // ─── Finished (waiting for opponent) ───
   if (finished) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center">
@@ -154,9 +143,9 @@ export default function QuizPlayPage({ params }: Props) {
           <div className="mb-4 inline-flex h-16 w-16 items-center justify-center border-2 border-brand-black bg-brand-jade">
             <Swords size={32} strokeWidth={3} />
           </div>
-          <p className="heading-lg mb-2">¡RESPONDISTE TODAS!</p>
+          <p className="heading-lg mb-2">ALL DONE!</p>
           <p className="label-meta mb-6 text-muted-foreground">
-            Respuestas: {answeredCount}/{totalQuestions}
+            Answers: {answeredCount}/{totalQuestions}
           </p>
           <div className="mx-auto mb-4 h-2 w-full max-w-xs border-2 border-brand-black bg-white">
             <div className="h-full bg-brand-jade" style={{ width: `${progress}%` }} />
@@ -165,10 +154,10 @@ export default function QuizPlayPage({ params }: Props) {
           <div className="mb-4 border-2 border-brand-gray p-4">
             <div className="flex items-center justify-center gap-2">
               <User size={16} strokeWidth={3} className="text-brand-violet" />
-              <p className="label-meta">ESPERANDO A TU RIVAL</p>
+              <p className="label-meta">WAITING FOR YOUR RIVAL</p>
             </div>
             <p className="label-meta mt-2 text-muted-foreground">
-              Serás redirigido automáticamente cuando termine.
+              You will be redirected automatically when they finish.
             </p>
           </div>
 
@@ -178,7 +167,7 @@ export default function QuizPlayPage({ params }: Props) {
           </div>
 
           <button onClick={() => router.push(`/duels/${id}/result`)} className="btn-violet">
-            VER RESULTADOS (FORZAR)
+            VIEW RESULTS (FORCE)
           </button>
         </div>
       </div>
@@ -187,12 +176,11 @@ export default function QuizPlayPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
-      {/* Header */}
       <div className="heavy-card mb-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Swords size={16} strokeWidth={3} className="text-brand-jade" />
-            <span className="heading-lg text-sm">DUELO EN CURSO</span>
+            <span className="heading-lg text-sm">DUEL IN PROGRESS</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock size={14} strokeWidth={3} className={timerColor} />
@@ -201,8 +189,8 @@ export default function QuizPlayPage({ params }: Props) {
         </div>
         <div className="mb-4">
           <div className="mb-1 flex items-center justify-between">
-            <span className="label-meta text-muted-foreground">Pregunta {currentQuestion + 1} de {totalQuestions}</span>
-            <span className="label-meta text-muted-foreground">{answeredCount}/{totalQuestions} respondidas</span>
+            <span className="label-meta text-muted-foreground">Question {currentQuestion + 1} of {totalQuestions}</span>
+            <span className="label-meta text-muted-foreground">{answeredCount}/{totalQuestions} answered</span>
           </div>
           <div className="h-2 w-full border-2 border-brand-black bg-white">
             <div className="h-full bg-brand-violet transition-all duration-500" style={{ width: `${progress}%` }} />
@@ -221,10 +209,9 @@ export default function QuizPlayPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Question */}
       <div className="heavy-card">
         <div className="mb-1 flex items-center gap-2">
-          <span className="label-meta text-muted-foreground">PREGUNTA {currentQuestion + 1}</span>
+          <span className="label-meta text-muted-foreground">QUESTION {currentQuestion + 1}</span>
         </div>
         <h2 className="heading-lg mb-6 !text-lg">{question?.text}</h2>
 
@@ -255,14 +242,14 @@ export default function QuizPlayPage({ params }: Props) {
             disabled={currentQuestion === 0}
             className="btn-violet !px-3 !py-1.5 !text-[10px] disabled:opacity-30"
           >
-            ← ANTERIOR
+            ← PREVIOUS
           </button>
           <span className="label-meta text-muted-foreground">
             {currentQuestion + 1}/{totalQuestions}
           </span>
           {selectedAnswer !== undefined && currentQuestion < totalQuestions - 1 && (
             <button onClick={() => setCurrentQuestion((p) => Math.min(p + 1, totalQuestions - 1))} className="btn-jade !px-3 !py-1.5 !text-[10px]">
-              SIGUIENTE →
+              NEXT →
             </button>
           )}
         </div>
@@ -270,7 +257,7 @@ export default function QuizPlayPage({ params }: Props) {
 
       <div className="mt-4 flex items-start gap-2 border-2 border-brand-black bg-yellow-50 p-3">
         <AlertTriangle size={14} strokeWidth={3} className="mt-0.5 shrink-0 text-orange-500" />
-        <p className="label-meta text-orange-500">Tus respuestas se guardan en el servidor. No cierres esta ventana.</p>
+        <p className="label-meta text-orange-500">Your answers are saved on the server. Don't close this window.</p>
       </div>
     </div>
   );

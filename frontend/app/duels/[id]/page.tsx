@@ -40,18 +40,16 @@ export default function DuelDetailPage({ params }: Props) {
   const handleAccept = useCallback(async () => {
     if (!duel || !address) return;
 
-    // 1. Compute opponent's USDC ATA
     let opponentAta: string | null = null;
     try {
       const { computeAta } = await import("@/lib/pdas");
       const { getProgramDerivedAddress, address: solAddr } = await import("@solana/kit");
       opponentAta = await computeAta(getProgramDerivedAddress, solAddr, address, "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
     } catch (e) {
-      setError("No se pudo computar la dirección del token");
+      setError("Could not compute token address");
       return;
     }
 
-    // 2. Compute escrow PDA if not stored
     let escrowPda = duel.escrowPda;
     if (!escrowPda && duel.onChainDuelId) {
       try {
@@ -64,13 +62,13 @@ export default function DuelDetailPage({ params }: Props) {
           "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
         );
       } catch (e) {
-        setError("No se pudo computar la dirección del escrow");
+        setError("Could not compute escrow address");
         return;
       }
     }
 
     if (!duel.onChainDuelId || !escrowPda || !opponentAta) {
-      setError("Este duelo no tiene dirección on-chain válida.");
+      setError("This duel has no valid on-chain address.");
       return;
     }
 
@@ -85,7 +83,6 @@ export default function DuelDetailPage({ params }: Props) {
         escrowPda,
       });
 
-      // Only sync DB when on-chain tx SUCCEEDED
       await confirmAcceptDuel(duel.id, {
         opponent: address,
         opponentAta,
@@ -94,14 +91,11 @@ export default function DuelDetailPage({ params }: Props) {
 
       setAccepted(true);
     } catch (e: any) {
-      // #6002 = InvalidStatus → duel already accepted on-chain by someone else
       const isAlreadyAccepted =
         e?.message?.includes("6002") ||
         e?.cause?.message?.includes("6002");
 
       if (isAlreadyAccepted) {
-        // Reconcile DB: the opponent already accepted on a previous attempt.
-        // Force-sync the DB so this user can proceed to the quiz.
         confirmAcceptDuel(duel.id, {
           opponent: duel.opponent || address,
           opponentAta,
@@ -112,12 +106,12 @@ export default function DuelDetailPage({ params }: Props) {
         return;
       }
 
-      const msg = e instanceof Error ? e.message : "Error al aceptar el duelo";
+      const msg = e instanceof Error ? e.message : "Error accepting duel";
       try {
         const updated = await getDuelDetail(duel.id);
         if (updated.status === "ACCEPTED") {
-      setAccepted(true);
-      triggerBalanceRefresh();
+          setAccepted(true);
+          triggerBalanceRefresh();
           return;
         }
       } catch {}
@@ -146,11 +140,11 @@ export default function DuelDetailPage({ params }: Props) {
   if (!duel) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
-        <p className="heading-xl mb-4">DUELO NO ENCONTRADO</p>
+        <p className="heading-xl mb-4">DUEL NOT FOUND</p>
         <p className="label-meta mb-6 text-muted-foreground">
-          Este duelo no existe, expiró o fue cancelado.
+          This duel doesn't exist, expired, or was cancelled.
         </p>
-        <Link href="/duels" className="btn-violet">VER DUELOS</Link>
+        <Link href="/duels" className="btn-violet">VIEW DUELS</Link>
       </div>
     );
   }
@@ -162,16 +156,16 @@ export default function DuelDetailPage({ params }: Props) {
           <div className="mb-4 inline-flex h-16 w-16 items-center justify-center border-2 border-brand-black bg-brand-jade">
             <Swords size={32} strokeWidth={3} />
           </div>
-          <p className="heading-lg mb-2">¡DUELO ACEPTADO!</p>
+          <p className="heading-lg mb-2">DUEL ACCEPTED!</p>
           <p className="label-meta mb-6 text-muted-foreground">
             {duel.challenger.slice(0, 8)}.. vs {address?.slice(0, 6)}..
           </p>
           <p className="label-meta mb-4 text-muted-foreground">
-            Tema: {duel.topic}
+            Topic: {duel.topic}
           </p>
           <Link href={`/duels/${duel.id}/play`} className="btn-jade">
             <BookOpen size={16} strokeWidth={3} />
-            COMENZAR QUIZ
+            START QUIZ
           </Link>
         </div>
       </div>
@@ -182,7 +176,7 @@ export default function DuelDetailPage({ params }: Props) {
     <div className="mx-auto max-w-3xl px-6 py-8">
       <Link href="/duels" className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-brand-violet">
         <ArrowLeft size={16} strokeWidth={3} />
-        Volver
+        Back
       </Link>
 
       <div className="heavy-card">
@@ -196,30 +190,30 @@ export default function DuelDetailPage({ params }: Props) {
 
         <div className="mb-6 grid grid-cols-2 gap-4 border-y-2 border-brand-gray py-4 sm:grid-cols-4">
           <div>
-            <span className="label-meta text-muted-foreground">Retador</span>
+            <span className="label-meta text-muted-foreground">Challenger</span>
             <p className="text-sm font-bold uppercase tracking-tight">{duel.challenger.slice(0, 8)}..</p>
           </div>
           <div>
-            <span className="label-meta text-muted-foreground">Garantía</span>
+            <span className="label-meta text-muted-foreground">Stake</span>
             <p className="text-sm font-bold uppercase tracking-tight">{duel.stakeAmount} USDC</p>
           </div>
           <div>
-            <span className="label-meta text-muted-foreground">Preguntas</span>
+            <span className="label-meta text-muted-foreground">Questions</span>
             <p className="text-sm font-bold uppercase tracking-tight">{duel.questionCount}</p>
           </div>
           <div>
-            <span className="label-meta text-muted-foreground">Tiempo</span>
+            <span className="label-meta text-muted-foreground">Time</span>
             <p className="text-sm font-bold uppercase tracking-tight">{duel.timeLimit / 60} min</p>
           </div>
         </div>
 
         <div className="mb-6 space-y-1">
-          <p className="label-meta text-muted-foreground">REGLAS</p>
+          <p className="label-meta text-muted-foreground">RULES</p>
           <ul className="space-y-1 text-xs font-bold uppercase tracking-wide">
-            <li>• Ambos responden las mismas {duel.questionCount} preguntas.</li>
-            <li>• Gana quien acierte más.</li>
-            <li>• Si empatan, cada uno recupera su garantía.</li>
-            <li>• Si no respondés a tiempo, perdés tu stake.</li>
+            <li>• Both players answer the same {duel.questionCount} questions.</li>
+            <li>• Highest score wins.</li>
+            <li>• A tie returns everyones stake.</li>
+            <li>• Not answering on time forfeits your stake.</li>
           </ul>
         </div>
 
@@ -229,14 +223,14 @@ export default function DuelDetailPage({ params }: Props) {
             className="btn-jade w-full justify-center !py-3"
           >
             <BookOpen size={16} strokeWidth={3} />
-            COMENZAR QUIZ
+            START QUIZ
           </Link>
         ) : (
           <>
             {!address && (
               <div className="mb-4 flex items-start gap-2 border-2 border-brand-black bg-brand-violet/10 p-3">
                 <AlertTriangle size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-brand-violet" />
-                <p className="label-meta text-brand-violet">Conectá tu wallet para aceptar el duelo.</p>
+                <p className="label-meta text-brand-violet">Connect your wallet to accept the duel.</p>
               </div>
             )}
 
@@ -255,12 +249,12 @@ export default function DuelDetailPage({ params }: Props) {
               {accepting ? (
                 <>
                   <div className="h-4 w-4 animate-spin border-2 border-black border-t-transparent" />
-                  ACEPTANDO...
+                  ACCEPTING...
                 </>
               ) : (
                 <>
                   <Swords size={16} strokeWidth={3} />
-                  ACEPTAR RETO — {duel.stakeAmount} USDC
+                  ACCEPT CHALLENGE — {duel.stakeAmount} USDC
                 </>
               )}
             </button>
@@ -268,7 +262,7 @@ export default function DuelDetailPage({ params }: Props) {
         )}
 
         <p className="label-meta mt-4 text-center text-muted-foreground">
-          ID: {duel.id.slice(0, 8)}.. · CREADO {timeAgo(duel.createdAt)}
+          ID: {duel.id.slice(0, 8)}.. · CREATED {timeAgo(duel.createdAt)}
         </p>
       </div>
     </div>
@@ -277,8 +271,8 @@ export default function DuelDetailPage({ params }: Props) {
 
 function timeAgo(ts: number): string {
   const min = Math.floor((Date.now() - ts) / 60000);
-  if (min < 1) return "Ahora";
-  if (min < 60) return `Hace ${min} min`;
+  if (min < 1) return "Now";
+  if (min < 60) return `${min}m ago`;
   const h = Math.floor(min / 60);
-  return `Hace ${h}h`;
+  return `${h}h ago`;
 }

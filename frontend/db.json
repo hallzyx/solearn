@@ -185,6 +185,99 @@
       "startedAt": 1778396074692,
       "completedAt": 1778396150380,
       "opponentAta": "4pnESVSe43Qi7tcraRmim2TVtbvoKdUDTEsNewJehpS9"
+    },
+    {
+      "id": "5d62b063-353e-4fcc-93dd-fdce36562436",
+      "duelId": "C-vuzpQWcOg",
+      "onChainDuelId": "6ZGXTKcZ4wXZVSr7WkDhnCcZd6y7wLHwrC3Hhw5iV7iL",
+      "escrowPda": "CzQbKjS21um1SCvPF2MHMEf6GDBSEJhi6DTJTe9oWpP",
+      "challengerAta": "4pnESVSe43Qi7tcraRmim2TVtbvoKdUDTEsNewJehpS9",
+      "status": "COMPLETED",
+      "challenger": "5Lmeq1uHyToSyzjiExDVuLJWpLBaQxLPUoMEpQAEicG1",
+      "opponent": "7oasWmrojhJsL5B8fMs5oWWojQJaW5nmXUj4mpEUQw8A",
+      "resolver": "35ibw735mSNa61tkB7UK5HAD1BJx8seVTcvKM66UejHp",
+      "courseName": "BLOCKCHAIN",
+      "topic": "SOLANA BASICS",
+      "stakeAmount": 1,
+      "questionCount": 3,
+      "timeLimit": 180,
+      "questions": [
+        {
+          "id": 1,
+          "text": "¿Qué mecanismo de consenso utiliza Solana para lograr alta velocidad de transacciones?",
+          "options": [
+            "Proof of Work (PoW)",
+            "Delegated Proof of Stake (DPoS)",
+            "Proof of History (PoH) combinado con Proof of Stake (PoS)",
+            "Byzantine Fault Tolerance (BFT) puro"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": 2,
+          "text": "¿Cuál de los siguientes conceptos es fundamental para el rendimiento de Solana y permite el procesamiento paralelo de transacciones?",
+          "options": [
+            "Sharding",
+            "State Channels",
+            "Sealevel (máquina virtual paralela)",
+            "Rollups"
+          ],
+          "correctIndex": 2
+        },
+        {
+          "id": 3,
+          "text": "En el modelo de cuentas de Solana, ¿qué característica distingue a una cuenta de programa de una cuenta de datos?",
+          "options": [
+            "Las cuentas de programa pueden almacenar tokens SOL, las de datos no.",
+            "Las cuentas de programa son ejecutables y contienen código, las de datos solo almacenan estado.",
+            "Las cuentas de programa tienen un tamaño fijo, mientras que las de datos pueden crecer dinámicamente.",
+            "Las cuentas de programa son propiedad del sistema, las de datos son propiedad de los usuarios."
+          ],
+          "correctIndex": 1
+        }
+      ],
+      "challengerAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 0,
+          "answeredAt": 1778398784863
+        },
+        {
+          "questionId": 2,
+          "selectedIndex": 2,
+          "answeredAt": 1778398785873
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 3,
+          "answeredAt": 1778398787084
+        }
+      ],
+      "opponentAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 2,
+          "answeredAt": 1778398771412
+        },
+        {
+          "questionId": 2,
+          "selectedIndex": 2,
+          "answeredAt": 1778398772571
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 1,
+          "answeredAt": 1778398774589
+        }
+      ],
+      "challengerScore": 1,
+      "opponentScore": 3,
+      "winner": "7oasWmrojhJsL5B8fMs5oWWojQJaW5nmXUj4mpEUQw8A",
+      "createdAt": 1778398713435,
+      "acceptedAt": 1778398748587,
+      "startedAt": 1778398748587,
+      "completedAt": 1778398798323,
+      "opponentAta": "EFAh9dmmAxMWr7MhyfLG6FqQ9C5FxnGR43f6ubt9brjU"
     }
   ]
 }

@@ -6,9 +6,6 @@ import { Search, Swords, Coins, Clock, User, ArrowLeft } from "lucide-react";
 import { listOpenDuels } from "@/lib/api";
 import type { DuelSummary } from "@/lib/api";
 
-/**
- * Feed of open duels — fetches from GET /api/duels.
- */
 export default function DuelsFeedPage() {
   const [duels, setDuels] = useState<DuelSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,15 +40,15 @@ export default function DuelsFeedPage() {
         className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-brand-violet"
       >
         <ArrowLeft size={16} strokeWidth={3} />
-        Volver
+        Back
       </Link>
 
       <div className="mb-8 flex items-center gap-3">
         <Search size={28} strokeWidth={3} className="text-brand-violet" />
         <h1 className="heading-xl">
-          DUELOS ABIERTOS
+          OPEN DUELS
           <span className="label-meta ml-3 align-middle text-muted-foreground">
-            {duels.length} DISPONIBLES
+            {duels.length} AVAILABLE
           </span>
         </h1>
       </div>
@@ -90,14 +87,14 @@ export default function DuelsFeedPage() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-xs font-bold uppercase tracking-wide">
-                    {duel.questionCount} preg.
+                    {duel.questionCount} q.
                   </p>
                   <p className="label-meta text-muted-foreground">
                     {duel.timeLimit / 60} min
                   </p>
                 </div>
                 <span className="btn-jade !px-4 !py-2 !text-[10px] group-hover:translate-x-0.5 group-hover:translate-y-0.5">
-                  ACEPTAR →
+                  ACCEPT →
                 </span>
               </div>
             </div>
@@ -107,12 +104,12 @@ export default function DuelsFeedPage() {
 
       {duels.length === 0 && (
         <div className="heavy-card py-16 text-center">
-          <p className="heading-lg mb-2">NO HAY DUELOS ABIERTOS</p>
+          <p className="heading-lg mb-2">NO OPEN DUELS</p>
           <p className="label-meta mb-4 text-muted-foreground">
-            Creá uno o volvé más tarde.
+            Create one or come back later.
           </p>
           <Link href="/create" className="btn-jade">
-            CREAR DUELO
+            CREATE DUEL
           </Link>
         </div>
       )}
@@ -122,8 +119,8 @@ export default function DuelsFeedPage() {
 
 function timeAgo(ts: number): string {
   const min = Math.floor((Date.now() - ts) / 60000);
-  if (min < 1) return "Ahora";
-  if (min < 60) return `Hace ${min} min`;
+  if (min < 1) return "Now";
+  if (min < 60) return `${min}m ago`;
   const h = Math.floor(min / 60);
-  return `Hace ${h}h`;
+  return `${h}h ago`;
 }

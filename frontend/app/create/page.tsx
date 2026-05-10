@@ -21,23 +21,23 @@ const STAKE_OPTIONS = [
 ] as const;
 
 const QUESTION_OPTIONS = [
-  { label: "3 (rápido)", value: 3 },
+  { label: "3 (quick)", value: 3 },
   { label: "5 (default)", value: 5 },
-  { label: "10 (completo)", value: 10 },
+  { label: "10 (full)", value: 10 },
 ] as const;
 
 const TIME_OPTIONS = [
-  { label: "3 min (rápido)", value: 180 },
+  { label: "3 min (quick)", value: 180 },
   { label: "5 min (default)", value: 300 },
-  { label: "10 min (completo)", value: 600 },
+  { label: "10 min (full)", value: 600 },
 ] as const;
 
 // ─── Schema ───
 
 const createDuelSchema = z.object({
-  courseName: z.string().min(3, "Mínimo 3 caracteres").max(100, "Máximo 100 caracteres"),
-  topic: z.string().min(3, "Mínimo 3 caracteres").max(200, "Máximo 200 caracteres"),
-  stakeAmount: z.number().positive("Seleccioná un monto"),
+  courseName: z.string().min(3, "Min 3 characters").max(100, "Max 100 characters"),
+  topic: z.string().min(3, "Min 3 characters").max(200, "Max 200 characters"),
+  stakeAmount: z.number().positive("Select an amount"),
   questionCount: z.number().min(3).max(10),
   timeLimit: z.number().min(180).max(600),
 });
@@ -69,7 +69,6 @@ export default function CreateDuelPage() {
   const updateField = useCallback(
     <K extends keyof FormData>(key: K, value: FormData[K]) => {
       setForm((prev) => ({ ...prev, [key]: value }));
-      // Clear error on change
       setErrors((prev) => {
         const next = { ...prev };
         delete next[key];
@@ -99,18 +98,16 @@ export default function CreateDuelPage() {
     if (!data) return;
 
     if (!address) {
-      alert("Conectá tu wallet primero");
+      alert("Connect your wallet first");
       return;
     }
 
     setStep("generating");
 
     try {
-      // 1. Generate duel_id and compute PDAs
       const did = generateDuelId();
       const didHex = Array.from(did).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-      // 2. Compute PDAs in-browser
       let duelPda: string | null = null;
       let escrowPda: string | null = null;
       let challengerAta: string | null = null;
@@ -123,7 +120,6 @@ export default function CreateDuelPage() {
         console.warn("PDA computation failed:", e);
       }
 
-      // 2. Call API: IA generates quiz, stores off-chain, receives PDAs
       const result = await createDuel({
         courseName: data.courseName,
         topic: data.topic,
@@ -139,7 +135,6 @@ export default function CreateDuelPage() {
 
       setDuelId(result.id);
 
-      // 3. Send on-chain transaction (create_duel)
       if (duelPda && escrowPda && challengerAta) {
         setStep("tx");
         try {
@@ -157,7 +152,6 @@ export default function CreateDuelPage() {
           console.log("✅ create_duel tx sent, sig:", createDuelTx.signature);
           triggerBalanceRefresh();
 
-          // Only sync DB when on-chain tx SUCCEEDED
           confirmCreateOnChain(result.id, {
             onChainDuelId: duelPda,
             escrowPda,
@@ -165,15 +159,14 @@ export default function CreateDuelPage() {
           }).catch((e) => console.warn("DB sync warning:", e));
         } catch (txErr: any) {
           console.error("❌ create_duel tx failed:", txErr);
-          // Don't sync — tx was rejected by contract
         }
       }
 
       setTxHash(result.duelId);
       setStep("confirm");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error desconocido";
-      alert(`Error al crear duelo: ${msg}`);
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      alert(`Error creating duel: ${msg}`);
       setStep("form");
     }
   }, [validate, address, createDuelTx]);
@@ -182,48 +175,43 @@ export default function CreateDuelPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
-      {/* Back */}
       <button
         onClick={() => router.push("/")}
         className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-brand-violet"
       >
         <ArrowLeft size={16} strokeWidth={3} />
-        Volver
+        Back
       </button>
 
       <div className="grid gap-8 lg:grid-cols-5">
-        {/* ─── Form ─── */}
         <div className="lg:col-span-3">
           <div className="heavy-card">
             <div className="mb-6 flex items-center gap-3">
               <Swords size={24} strokeWidth={3} className="text-brand-jade" />
-              <h2 className="heading-lg">CREAR DUELO</h2>
+              <h2 className="heading-lg">CREATE DUEL</h2>
             </div>
 
             {step === "form" && (
               <div className="space-y-5">
-                {/* Course Name */}
-                <Field label="Nombre del curso" error={errors.courseName}>
+                <Field label="Course name" error={errors.courseName}>
                   <input
                     className="w-full border-2 border-brand-black bg-surface p-3 text-sm font-medium uppercase tracking-wide placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-brand-black"
-                    placeholder="Ej: TECNOLOGÍAS EMERGENTES"
+                    placeholder="e.g. EMERGING TECHNOLOGIES"
                     value={form.courseName}
                     onChange={(e) => updateField("courseName", e.target.value.toUpperCase())}
                   />
                 </Field>
 
-                {/* Topic */}
-                <Field label="Tema del duelo" error={errors.topic}>
+                <Field label="Quiz topic" error={errors.topic}>
                   <input
                     className="w-full border-2 border-brand-black bg-surface p-3 text-sm font-medium uppercase tracking-wide placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-brand-black"
-                    placeholder="Ej: TEORÍA BÁSICA DE BLOCKCHAIN"
+                    placeholder="e.g. BLOCKCHAIN BASICS"
                     value={form.topic}
                     onChange={(e) => updateField("topic", e.target.value.toUpperCase())}
                   />
                 </Field>
 
-                {/* Stake */}
-                <Field label="Garantía (stake)" error={errors.stakeAmount}>
+                <Field label="Stake (wager)" error={errors.stakeAmount}>
                   <div className="grid grid-cols-4 gap-2">
                     {STAKE_OPTIONS.map((opt) => (
                       <button
@@ -242,8 +230,7 @@ export default function CreateDuelPage() {
                   </div>
                 </Field>
 
-                {/* Question Count */}
-                <Field label="Cantidad de preguntas" error={errors.questionCount}>
+                <Field label="Number of questions" error={errors.questionCount}>
                   <div className="grid grid-cols-3 gap-2">
                     {QUESTION_OPTIONS.map((opt) => (
                       <button
@@ -262,8 +249,7 @@ export default function CreateDuelPage() {
                   </div>
                 </Field>
 
-                {/* Time Limit */}
-                <Field label="Tiempo límite" error={errors.timeLimit}>
+                <Field label="Time limit" error={errors.timeLimit}>
                   <div className="grid grid-cols-3 gap-2">
                     {TIME_OPTIONS.map((opt) => (
                       <button
@@ -282,24 +268,22 @@ export default function CreateDuelPage() {
                   </div>
                 </Field>
 
-                {/* Wallet warning */}
                 {!isConnected && (
                   <div className="flex items-start gap-2 border-2 border-brand-black bg-brand-violet/10 p-3">
                     <AlertTriangle size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-brand-violet" />
                     <p className="label-meta text-brand-violet">
-                      Conectá tu wallet para crear el duelo.
+                      Connect your wallet to create the duel.
                     </p>
                   </div>
                 )}
 
-                {/* Submit */}
                 <button
                   onClick={handleSubmit}
                   disabled={!isConnected}
                   className="btn-jade w-full justify-center !py-3"
                 >
                   <Swords size={16} strokeWidth={3} />
-                  CREAR DUELO
+                  CREATE DUEL
                 </button>
               </div>
             )}
@@ -307,9 +291,9 @@ export default function CreateDuelPage() {
             {step === "generating" && (
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="mb-4 h-8 w-8 animate-spin border-2 border-brand-black border-t-brand-jade" />
-                <p className="heading-lg">GENERANDO QUIZ</p>
+                <p className="heading-lg">GENERATING QUIZ</p>
                 <p className="label-meta mt-2 text-muted-foreground">
-                  La IA está preparando las preguntas...
+                  AI is preparing the questions...
                 </p>
               </div>
             )}
@@ -319,12 +303,12 @@ export default function CreateDuelPage() {
                 <div className="mb-4 inline-flex h-16 w-16 items-center justify-center border-2 border-brand-black bg-brand-jade">
                   <Swords size={32} strokeWidth={3} />
                 </div>
-                <p className="heading-lg mb-2">DUELO CREADO</p>
+                <p className="heading-lg mb-2">DUEL CREATED</p>
                 <p className="label-meta mb-2 text-muted-foreground">
-                  ID del duelo: {txHash}
+                  Duel ID: {txHash}
                 </p>
                 <p className="label-meta mb-6 text-muted-foreground">
-                  Compartí el enlace con tu rival desde la pantalla de detalle.
+                  Share the link from the duel detail page with your opponent.
                 </p>
                 <div className="flex flex-col gap-3">
                   {duelId && (
@@ -333,20 +317,20 @@ export default function CreateDuelPage() {
                       className="btn-jade"
                     >
                       <Swords size={16} strokeWidth={3} />
-                      IR AL DUELO
+                      GO TO DUEL
                     </button>
                   )}
                   <button
                     onClick={() => router.push(`/duels`)}
                     className="btn-violet"
                   >
-                    VER DUELOS ABIERTOS
+                    VIEW OPEN DUELS
                   </button>
                   <button
                     onClick={() => router.push("/")}
                     className="btn-violet !border-brand-gray !bg-white !text-black"
                   >
-                    VOLVER AL INICIO
+                    BACK TO HOME
                   </button>
                 </div>
               </div>
@@ -354,23 +338,22 @@ export default function CreateDuelPage() {
           </div>
         </div>
 
-        {/* ─── Preview ─── */}
         <div className="lg:col-span-2">
           <div className="heavy-card sticky top-8">
             <span className="label-meta mb-4 block text-muted-foreground">
-              ⚔️ PREVIEW DEL DUELO
+              ⚔️ DUEL PREVIEW
             </span>
             <div className="space-y-3 border-t-2 border-brand-gray pt-4">
-              <PreviewRow label="Retador" value={address ? `${address.slice(0, 6)}..${address.slice(-4)}` : "— (conectar wallet)"} />
-              <PreviewRow label="Curso" value={form.courseName || "—"} />
-              <PreviewRow label="Tema" value={form.topic || "—"} />
-              <PreviewRow label="Garantía" value={`${form.stakeAmount} USDC`} />
-              <PreviewRow label="Preguntas" value={`${form.questionCount}`} />
-              <PreviewRow label="Tiempo" value={`${form.timeLimit / 60} min`} />
+              <PreviewRow label="Challenger" value={address ? `${address.slice(0, 6)}..${address.slice(-4)}` : "— (connect wallet)"} />
+              <PreviewRow label="Course" value={form.courseName || "—"} />
+              <PreviewRow label="Topic" value={form.topic || "—"} />
+              <PreviewRow label="Stake" value={`${form.stakeAmount} USDC`} />
+              <PreviewRow label="Questions" value={`${form.questionCount}`} />
+              <PreviewRow label="Time" value={`${form.timeLimit / 60} min`} />
             </div>
             <div className="mt-4 border-t-2 border-brand-gray pt-3">
               <span className="label-meta text-muted-foreground">
-                ID: PREVIEW — en vivo
+                ID: PREVIEW — live
               </span>
             </div>
           </div>
@@ -382,24 +365,12 @@ export default function CreateDuelPage() {
 
 // ─── Helpers ───
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
       <label className="label-meta mb-2 block text-muted-foreground">{label}</label>
       {children}
-      {error && (
-        <p className="mt-1 text-xs font-bold uppercase tracking-wide text-destructive">
-          {error}
-        </p>
-      )}
+      {error && <p className="mt-1 text-xs font-bold uppercase tracking-wide text-destructive">{error}</p>}
     </div>
   );
 }

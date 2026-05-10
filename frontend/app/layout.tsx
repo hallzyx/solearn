@@ -15,9 +15,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Solearn — Duelo de estudio on-chain",
+  title: "Solearn — On-chain study duel",
   description:
-    "Retá a un compañero, apostá USDC, y demostrá quien sabe más. Duelo de estudio impulsado por IA y Solana.",
+    "Challenge a classmate, stake USDC, and prove who knows more. AI-powered study duel on Solana.",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} h-full`}
     >
       <body className="min-h-dvh flex flex-col">
