@@ -1,10 +1,15 @@
 "use client";
 
 import { SolanaProvider } from "@solana/react-hooks";
-import { createSolanaClient } from "@/lib/solana";
+import { createDefaultClient } from "@solana/client";
+import { DEVNET_RPC } from "@/lib/solana";
 import type { ReactNode } from "react";
 
-const client = createSolanaClient();
+// Client created once at module level (browser-only "use client")
+const client = createDefaultClient({
+  rpc: DEVNET_RPC,
+  cluster: "devnet",
+});
 
 /**
  * Wraps the app with all required providers:
@@ -12,10 +17,7 @@ const client = createSolanaClient();
  */
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <SolanaProvider
-      client={client}
-      walletPersistence={{ autoConnect: true }}
-    >
+    <SolanaProvider client={client} walletPersistence={{ autoConnect: true }}>
       {children}
     </SolanaProvider>
   );

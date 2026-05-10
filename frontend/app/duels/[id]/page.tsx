@@ -1,44 +1,17 @@
 "use client";
 
-import { use, useCallback, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletSession } from "@solana/react-hooks";
-import { ArrowLeft, Swords, Coins, Clock, User, AlertTriangle, BookOpen } from "lucide-react";
+import { ArrowLeft, Swords, AlertTriangle, BookOpen } from "lucide-react";
 import Link from "next/link";
-
-// ─── Mock data ───
-
-const MOCK_DUELS: Record<string, {
-  id: string;
-  challenger: string;
-  courseName: string;
-  topic: string;
-  stakeAmount: number;
-  questionCount: number;
-  timeLimit: number;
-  createdAt: string;
-  challengerToken: string;
-}> = {
-  duel_001: {
-    id: "duel_001",
-    challenger: "alice.sol",
-    courseName: "TECNOLOGÍAS EMERGENTES",
-    topic: "TEORÍA BÁSICA DE BLOCKCHAIN",
-    stakeAmount: 1,
-    questionCount: 5,
-    timeLimit: 300,
-    createdAt: "Hace 2 min",
-    challengerToken: "0xAlice...abc",
-  },
-};
-
-// ─── Types ───
+import { getDuelDetail, confirmAcceptDuel } from "@/lib/api";
+import { useAcceptDuel } from "@/hooks/useProgram";
+import type { DuelDetail as DuelDetailType } from "@/lib/api";
 
 type Props = {
   params: Promise<{ id: string }>;
 };
-
-// ─── Page ───
 
 export default function DuelDetailPage({ params }: Props) {
   const { id } = use(params);
@@ -46,38 +19,137 @@ export default function DuelDetailPage({ params }: Props) {
   const session = useWalletSession();
   const address = session?.account?.address;
 
+  const [duel, setDuel] = useState<DuelDetailType | null>(null);
+  const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const duel = MOCK_DUELS[id];
+  const acceptDuelTx = useAcceptDuel();
+
+  useEffect(() => {
+    getDuelDetail(id)
+      .then(setDuel)
+      .catch(() => setDuel(null))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const handleAccept = useCallback(async () => {
     if (!duel || !address) return;
+
+    // 1. Compute opponent's USDC ATA
+    let opponentAta: string | null = null;
+    try {
+      const { computeAta } = await import("@/lib/pdas");
+      const { getProgramDerivedAddress, address: solAddr } = await import("@solana/kit");
+      opponentAta = await computeAta(getProgramDerivedAddress, solAddr, address, "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
+    } catch (e) {
+      setError("No se pudo computar la dirección del token");
+      return;
+    }
+
+    // 2. Compute escrow PDA if not stored
+    let escrowPda = duel.escrowPda;
+    if (!escrowPda && duel.onChainDuelId) {
+      try {
+        const { computeEscrowPda } = await import("@/lib/pdas");
+        const { getProgramDerivedAddress, address: solAddr } = await import("@solana/kit");
+        escrowPda = await computeEscrowPda(
+          getProgramDerivedAddress, solAddr,
+          "Cj6wPBbQoBZW9GbgAcUtfJEiJZiawiRKzk9JXLTzkfUR",
+          duel.onChainDuelId,
+          "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+        );
+      } catch (e) {
+        setError("No se pudo computar la dirección del escrow");
+        return;
+      }
+    }
+
+    if (!duel.onChainDuelId || !escrowPda || !opponentAta) {
+      setError("Este duelo no tiene dirección on-chain válida.");
+      return;
+    }
+
     setAccepting(true);
+    setError(null);
 
-    // Simulate: send accept_duel tx to Solana
-    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      await acceptDuelTx.execute({
+        opponent: address,
+        opponentAta,
+        duelPda: duel.onChainDuelId,
+        escrowPda,
+      });
 
-    setAccepting(false);
-    setAccepted(true);
-  }, [duel, address]);
+      // Only sync DB when on-chain tx SUCCEEDED
+      await confirmAcceptDuel(duel.id, {
+        opponent: address,
+        opponentAta,
+        onChainDuelId: duel.onChainDuelId,
+      }).catch(() => {});
 
-  // Not found
+      setAccepted(true);
+    } catch (e: any) {
+      // #6002 = InvalidStatus → duel already accepted on-chain by someone else
+      const isAlreadyAccepted =
+        e?.message?.includes("6002") ||
+        e?.cause?.message?.includes("6002");
+
+      if (isAlreadyAccepted) {
+        // Reconcile DB: the opponent already accepted on a previous attempt.
+        // Force-sync the DB so this user can proceed to the quiz.
+        confirmAcceptDuel(duel.id, {
+          opponent: duel.opponent || address,
+          opponentAta,
+          onChainDuelId: duel.onChainDuelId,
+        }).catch(() => {});
+        setAccepted(true);
+        return;
+      }
+
+      const msg = e instanceof Error ? e.message : "Error al aceptar el duelo";
+      try {
+        const updated = await getDuelDetail(duel.id);
+        if (updated.status === "ACCEPTED") {
+          setAccepted(true);
+          return;
+        }
+      } catch {}
+      setError(msg);
+    } finally {
+      setAccepting(false);
+    }
+  }, [duel, address, acceptDuelTx]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        <div className="heavy-card animate-pulse">
+          <div className="mb-4 h-6 w-48 border-2 border-brand-gray bg-brand-gray" />
+          <div className="mb-6 h-4 w-64 border-2 border-brand-gray bg-brand-gray" />
+          <div className="mb-4 grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-10 border-2 border-brand-gray bg-brand-gray" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!duel) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
         <p className="heading-xl mb-4">DUELO NO ENCONTRADO</p>
         <p className="label-meta mb-6 text-muted-foreground">
-          Este duelo no existe o ya expiró.
+          Este duelo no existe, expiró o fue cancelado.
         </p>
-        <Link href="/duels" className="btn-violet">
-          VER DUELOS
-        </Link>
+        <Link href="/duels" className="btn-violet">VER DUELOS</Link>
       </div>
     );
   }
 
-  // Accepted
   if (accepted) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
@@ -87,12 +159,12 @@ export default function DuelDetailPage({ params }: Props) {
           </div>
           <p className="heading-lg mb-2">¡DUELO ACEPTADO!</p>
           <p className="label-meta mb-6 text-muted-foreground">
-            {duel.challenger} vs {address?.slice(0, 6)}..
+            {duel.challenger.slice(0, 8)}.. vs {address?.slice(0, 6)}..
           </p>
-          <Link
-            href={`/duels/${duel.id}/play`}
-            className="btn-jade"
-          >
+          <p className="label-meta mb-4 text-muted-foreground">
+            Tema: {duel.topic}
+          </p>
+          <Link href={`/duels/${duel.id}/play`} className="btn-jade">
             <BookOpen size={16} strokeWidth={3} />
             COMENZAR QUIZ
           </Link>
@@ -103,30 +175,24 @@ export default function DuelDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
-      <Link
-        href="/duels"
-        className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-brand-violet"
-      >
+      <Link href="/duels" className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-brand-violet">
         <ArrowLeft size={16} strokeWidth={3} />
         Volver
       </Link>
 
       <div className="heavy-card">
-        {/* Header */}
         <div className="mb-6 flex items-center gap-3">
           <Swords size={24} strokeWidth={3} className="text-brand-jade" />
           <h1 className="heading-lg">{duel.courseName}</h1>
         </div>
-
         <p className="mb-6 text-sm font-bold uppercase tracking-wide text-muted-foreground">
           {duel.topic}
         </p>
 
-        {/* Stats grid */}
         <div className="mb-6 grid grid-cols-2 gap-4 border-y-2 border-brand-gray py-4 sm:grid-cols-4">
           <div>
             <span className="label-meta text-muted-foreground">Retador</span>
-            <p className="text-sm font-bold uppercase tracking-tight">{duel.challenger}</p>
+            <p className="text-sm font-bold uppercase tracking-tight">{duel.challenger.slice(0, 8)}..</p>
           </div>
           <div>
             <span className="label-meta text-muted-foreground">Garantía</span>
@@ -142,7 +208,6 @@ export default function DuelDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Rules */}
         <div className="mb-6 space-y-1">
           <p className="label-meta text-muted-foreground">REGLAS</p>
           <ul className="space-y-1 text-xs font-bold uppercase tracking-wide">
@@ -153,40 +218,62 @@ export default function DuelDetailPage({ params }: Props) {
           </ul>
         </div>
 
-        {/* Wallet validation */}
-        {!address && (
-          <div className="mb-4 flex items-start gap-2 border-2 border-brand-black bg-brand-violet/10 p-3">
-            <AlertTriangle size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-brand-violet" />
-            <p className="label-meta text-brand-violet">
-              Conectá tu wallet para aceptar el duelo.
-            </p>
-          </div>
+        {duel.status === "ACCEPTED" ? (
+          <Link
+            href={`/duels/${duel.id}/play`}
+            className="btn-jade w-full justify-center !py-3"
+          >
+            <BookOpen size={16} strokeWidth={3} />
+            COMENZAR QUIZ
+          </Link>
+        ) : (
+          <>
+            {!address && (
+              <div className="mb-4 flex items-start gap-2 border-2 border-brand-black bg-brand-violet/10 p-3">
+                <AlertTriangle size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-brand-violet" />
+                <p className="label-meta text-brand-violet">Conectá tu wallet para aceptar el duelo.</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="mb-4 flex items-start gap-2 border-2 border-brand-black bg-red-50 p-3">
+                <AlertTriangle size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-destructive" />
+                <p className="label-meta text-destructive">{error}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleAccept}
+              disabled={!address || accepting}
+              className="btn-jade w-full justify-center !py-3"
+            >
+              {accepting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin border-2 border-black border-t-transparent" />
+                  ACEPTANDO...
+                </>
+              ) : (
+                <>
+                  <Swords size={16} strokeWidth={3} />
+                  ACEPTAR RETO — {duel.stakeAmount} USDC
+                </>
+              )}
+            </button>
+          </>
         )}
 
-        {/* Accept */}
-        <button
-          onClick={handleAccept}
-          disabled={!address || accepting}
-          className="btn-jade w-full justify-center !py-3"
-        >
-          {accepting ? (
-            <>
-              <div className="h-4 w-4 animate-spin border-2 border-black border-t-transparent" />
-              ACEPTANDO...
-            </>
-          ) : (
-            <>
-              <Swords size={16} strokeWidth={3} />
-              ACEPTAR RETO — {duel.stakeAmount} USDC
-            </>
-          )}
-        </button>
-
-        {/* ID meta */}
         <p className="label-meta mt-4 text-center text-muted-foreground">
-          ID: {duel.id} · CREADO {duel.createdAt}
+          ID: {duel.id.slice(0, 8)}.. · CREADO {timeAgo(duel.createdAt)}
         </p>
       </div>
     </div>
   );
+}
+
+function timeAgo(ts: number): string {
+  const min = Math.floor((Date.now() - ts) / 60000);
+  if (min < 1) return "Ahora";
+  if (min < 60) return `Hace ${min} min`;
+  const h = Math.floor(min / 60);
+  return `Hace ${h}h`;
 }

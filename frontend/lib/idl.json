@@ -1,0 +1,843 @@
+{
+  "address": "Cj6wPBbQoBZW9GbgAcUtfJEiJZiawiRKzk9JXLTzkfUR",
+  "metadata": {
+    "name": "solearn_duel",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Solearn - On-chain duel escrow program"
+  },
+  "docs": [
+    "Solearn — On-chain duel escrow program.",
+    "",
+    "Two students stake tokens on a quiz duel. A backend resolver triggers",
+    "score submission; the contract distributes the pot to the winner."
+  ],
+  "instructions": [
+    {
+      "name": "accept_duel",
+      "docs": [
+        "Accepts an open duel and locks the opponent's stake."
+      ],
+      "discriminator": [
+        80,
+        52,
+        90,
+        135,
+        172,
+        221,
+        175,
+        102
+      ],
+      "accounts": [
+        {
+          "name": "opponent",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.duel_id",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "opponent_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_duel",
+      "docs": [
+        "Cancels a duel before it is accepted (challenger only)."
+      ],
+      "discriminator": [
+        83,
+        124,
+        224,
+        237,
+        235,
+        44,
+        38,
+        57
+      ],
+      "accounts": [
+        {
+          "name": "challenger",
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.duel_id",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "challenger_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_timeout",
+      "docs": [
+        "Claims the full pot after a timeout (opponent abandoned)."
+      ],
+      "discriminator": [
+        130,
+        234,
+        45,
+        53,
+        120,
+        90,
+        86,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "resolver",
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.duel_id",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "claimer_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_duel",
+      "docs": [
+        "Closes duel accounts after completion to reclaim rent."
+      ],
+      "discriminator": [
+        206,
+        171,
+        112,
+        150,
+        214,
+        78,
+        213,
+        196
+      ],
+      "accounts": [
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.duel_id",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "destination",
+          "docs": [
+            "Where rent refunds go (can be challenger, opponent, or resolver)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_duel",
+      "docs": [
+        "Creates a new duel and locks the challenger's stake.",
+        "The challenger specifies question count and time limit."
+      ],
+      "discriminator": [
+        49,
+        28,
+        93,
+        11,
+        75,
+        242,
+        69,
+        165
+      ],
+      "accounts": [
+        {
+          "name": "challenger",
+          "docs": [
+            "The challenger creating the duel."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "resolver",
+          "docs": [
+            "The resolver backend keypair authorized to resolve/claim timeout."
+          ]
+        },
+        {
+          "name": "duel",
+          "docs": [
+            "The duel account PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "duel_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "The escrow token account (ATA) where stakes are held."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "The USDC/SOL token mint (USDC on devnet = 6 decimals)."
+          ]
+        },
+        {
+          "name": "challenger_token_account",
+          "docs": [
+            "Challenger's token account (ATA) to debit the stake from."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "Token program (SPL Token or Token-2022)."
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program for account creation."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "stake_amount",
+          "type": "u64"
+        },
+        {
+          "name": "question_count",
+          "type": "u8"
+        },
+        {
+          "name": "time_limit",
+          "type": "i64"
+        },
+        {
+          "name": "duel_id",
+          "type": {
+            "array": [
+              "u8",
+              8
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "resolve_duel",
+      "docs": [
+        "Resolves a completed duel by submitting both players' scores.",
+        "The resolver (backend) determines the winner and distributes funds."
+      ],
+      "discriminator": [
+        213,
+        162,
+        203,
+        235,
+        151,
+        236,
+        178,
+        64
+      ],
+      "accounts": [
+        {
+          "name": "resolver",
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.duel_id",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "challenger_token_account",
+          "writable": true
+        },
+        {
+          "name": "opponent_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "score_a",
+          "type": "u8"
+        },
+        {
+          "name": "score_b",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Duel",
+      "discriminator": [
+        126,
+        229,
+        210,
+        60,
+        177,
+        135,
+        124,
+        224
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NotChallenger",
+      "msg": "Only the challenger can cancel this duel"
+    },
+    {
+      "code": 6001,
+      "name": "NotResolver",
+      "msg": "Only the authorized resolver can perform this action"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidStatus",
+      "msg": "Duel is not in the required state"
+    },
+    {
+      "code": 6003,
+      "name": "NotOpponent",
+      "msg": "Only the opponent can accept this duel"
+    },
+    {
+      "code": 6004,
+      "name": "AlreadyAccepted",
+      "msg": "Duel has already been accepted"
+    },
+    {
+      "code": 6005,
+      "name": "TimeoutNotReached",
+      "msg": "Timeout has not been reached yet"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidScore",
+      "msg": "Invalid score values"
+    },
+    {
+      "code": 6007,
+      "name": "EscrowNotEmpty",
+      "msg": "Escrow still has funds"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidQuestionCount",
+      "msg": "Invalid question count"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidTimeLimit",
+      "msg": "Invalid time limit"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidStakeAmount",
+      "msg": "Invalid stake amount"
+    },
+    {
+      "code": 6011,
+      "name": "CloseNotAllowed",
+      "msg": "Duel cannot be closed in the current state"
+    }
+  ],
+  "types": [
+    {
+      "name": "Duel",
+      "docs": [
+        "On-chain state for a duel between two players."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "challenger",
+            "docs": [
+              "Player who created the duel."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "opponent",
+            "docs": [
+              "Player who accepted the duel (set on accept)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "resolver",
+            "docs": [
+              "Authorized resolver backend keypair."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "duel_id",
+            "docs": [
+              "Unique identifier for this duel (8 random bytes)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "stake_amount",
+            "docs": [
+              "Stake amount each player deposits (in USDC base units / lamports)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "question_count",
+            "docs": [
+              "Number of questions in the quiz (3, 5, or 10)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "time_limit",
+            "docs": [
+              "Time limit in seconds (180, 300, or 600)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current duel status."
+            ],
+            "type": {
+              "defined": {
+                "name": "DuelStatus"
+              }
+            }
+          },
+          {
+            "name": "score_a",
+            "docs": [
+              "Challenger's final score."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "score_b",
+            "docs": [
+              "Opponent's final score."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "winner",
+            "docs": [
+              "Winner's public key (None if tie or not resolved)."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Timestamp when the duel was created."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "accepted_at",
+            "docs": [
+              "Timestamp when the duel was accepted."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "started_at",
+            "docs": [
+              "Timestamp when the duel entered InProgress."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "completed_at",
+            "docs": [
+              "Timestamp when the duel was completed/timed out."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump for signing."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DuelStatus",
+      "docs": [
+        "Current status of a duel."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Created"
+          },
+          {
+            "name": "Accepted"
+          },
+          {
+            "name": "InProgress"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "TimedOut"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "DUEL_SEED",
+      "docs": [
+        "Seed for the duel account PDA."
+      ],
+      "type": "string",
+      "value": "\"duel\""
+    },
+    {
+      "name": "ESCROW_SEED",
+      "docs": [
+        "Seed for the escrow token account PDA."
+      ],
+      "type": "string",
+      "value": "\"escrow\""
+    }
+  ]
+}

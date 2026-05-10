@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useWalletSession } from "@solana/react-hooks";
 import { Swords, ArrowLeft, AlertTriangle } from "lucide-react";
 import { z } from "zod";
+import { createDuel, confirmCreateOnChain } from "@/lib/api";
+import { useCreateDuel } from "@/hooks/useProgram";
+import { generateDuelId } from "@/lib/solana-instructions";
+import { computePdas } from "@/lib/pdas";
 
 // ─── Constants ───
 
@@ -54,8 +58,11 @@ export default function CreateDuelPage() {
     timeLimit: 300,
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [step, setStep] = useState<"form" | "generating" | "confirm">("form");
+  const [step, setStep] = useState<"form" | "generating" | "confirm" | "tx">("form");
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [duelId, setDuelId] = useState<string | null>(null);
+
+  const createDuelTx = useCreateDuel();
 
   const updateField = useCallback(
     <K extends keyof FormData>(key: K, value: FormData[K]) => {
@@ -96,14 +103,77 @@ export default function CreateDuelPage() {
 
     setStep("generating");
 
-    // Simulated: call backend API to generate quiz
-    // In real MVP: POST /api/duels → IA generates quiz → get duel_id
-    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      // 1. Generate duel_id and compute PDAs
+      const did = generateDuelId();
+      const didHex = Array.from(did).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-    // Simulated: after quiz generated, send tx to Solana
-    setStep("confirm");
-    setTxHash("SIMULATED_TX_HASH_123");
-  }, [validate, address]);
+      // 2. Compute PDAs in-browser
+      let duelPda: string | null = null;
+      let escrowPda: string | null = null;
+      let challengerAta: string | null = null;
+      try {
+        const pdas = await computePdas(did, address);
+        duelPda = pdas.duelPda;
+        escrowPda = pdas.escrowPda;
+        challengerAta = pdas.challengerAta;
+      } catch (e) {
+        console.warn("PDA computation failed:", e);
+      }
+
+      // 2. Call API: IA generates quiz, stores off-chain, receives PDAs
+      const result = await createDuel({
+        courseName: data.courseName,
+        topic: data.topic,
+        stakeAmount: data.stakeAmount,
+        questionCount: data.questionCount,
+        timeLimit: data.timeLimit,
+        challenger: address,
+        duelId: didHex,
+        duelPda: duelPda ?? undefined,
+        escrowPda: escrowPda ?? undefined,
+        challengerAta: challengerAta ?? undefined,
+      });
+
+      setDuelId(result.id);
+
+      // 3. Send on-chain transaction (create_duel)
+      if (duelPda && escrowPda && challengerAta) {
+        setStep("tx");
+        try {
+          await createDuelTx.execute({
+            challenger: address,
+            resolver: process.env.NEXT_PUBLIC_RESOLVER_PUBKEY || address,
+            duelPda,
+            escrowPda,
+            challengerAta,
+            duelId: did,
+            stakeAmount: data.stakeAmount,
+            questionCount: data.questionCount,
+            timeLimit: data.timeLimit,
+          });
+          console.log("✅ create_duel tx sent, sig:", createDuelTx.signature);
+
+          // Only sync DB when on-chain tx SUCCEEDED
+          confirmCreateOnChain(result.id, {
+            onChainDuelId: duelPda,
+            escrowPda,
+            challengerAta,
+          }).catch((e) => console.warn("DB sync warning:", e));
+        } catch (txErr: any) {
+          console.error("❌ create_duel tx failed:", txErr);
+          // Don't sync — tx was rejected by contract
+        }
+      }
+
+      setTxHash(result.duelId);
+      setStep("confirm");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      alert(`Error al crear duelo: ${msg}`);
+      setStep("form");
+    }
+  }, [validate, address, createDuelTx]);
 
   const isConnected = !!address;
 
@@ -247,15 +317,35 @@ export default function CreateDuelPage() {
                   <Swords size={32} strokeWidth={3} />
                 </div>
                 <p className="heading-lg mb-2">DUELO CREADO</p>
-                <p className="label-meta mb-6 text-muted-foreground">
-                  TX: {txHash?.slice(0, 16)}...
+                <p className="label-meta mb-2 text-muted-foreground">
+                  ID del duelo: {txHash}
                 </p>
-                <button
-                  onClick={() => router.push("/")}
-                  className="btn-violet"
-                >
-                  VOLVER AL INICIO
-                </button>
+                <p className="label-meta mb-6 text-muted-foreground">
+                  Compartí el enlace con tu rival desde la pantalla de detalle.
+                </p>
+                <div className="flex flex-col gap-3">
+                  {duelId && (
+                    <button
+                      onClick={() => router.push(`/duels/${duelId}`)}
+                      className="btn-jade"
+                    >
+                      <Swords size={16} strokeWidth={3} />
+                      IR AL DUELO
+                    </button>
+                  )}
+                  <button
+                    onClick={() => router.push(`/duels`)}
+                    className="btn-violet"
+                  >
+                    VER DUELOS ABIERTOS
+                  </button>
+                  <button
+                    onClick={() => router.push("/")}
+                    className="btn-violet !border-brand-gray !bg-white !text-black"
+                  >
+                    VOLVER AL INICIO
+                  </button>
+                </div>
               </div>
             )}
           </div>

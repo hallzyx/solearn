@@ -1,44 +1,41 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Search, Swords, Coins, Clock, User, ArrowLeft } from "lucide-react";
+import { listOpenDuels } from "@/lib/api";
+import type { DuelSummary } from "@/lib/api";
 
-// ─── Mock data ───
-
-const MOCK_DUELS = [
-  {
-    id: "duel_001",
-    challenger: "alice.sol",
-    courseName: "TECNOLOGÍAS EMERGENTES",
-    topic: "TEORÍA BÁSICA DE BLOCKCHAIN",
-    stakeAmount: 1,
-    questionCount: 5,
-    timeLimit: 300,
-    createdAt: "Hace 2 min",
-  },
-  {
-    id: "duel_002",
-    challenger: "bob.sol",
-    courseName: "CLOUD COMPUTING",
-    topic: "AWS VS AZURE VS GCP",
-    stakeAmount: 2,
-    questionCount: 5,
-    timeLimit: 300,
-    createdAt: "Hace 15 min",
-  },
-  {
-    id: "duel_003",
-    challenger: "carol.sol",
-    courseName: "INTELIGENCIA ARTIFICIAL",
-    topic: "REDES NEURONALES CONVOLUCIONALES",
-    stakeAmount: 5,
-    questionCount: 10,
-    timeLimit: 600,
-    createdAt: "Hace 1 hora",
-  },
-];
-
-// ─── Page ───
-
+/**
+ * Feed of open duels — fetches from GET /api/duels.
+ */
 export default function DuelsFeedPage() {
+  const [duels, setDuels] = useState<DuelSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listOpenDuels()
+      .then(setDuels)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="heavy-card animate-pulse">
+              <div className="mb-2 h-5 w-48 border-2 border-brand-gray bg-brand-gray" />
+              <div className="mb-2 h-4 w-72 border-2 border-brand-gray bg-brand-gray" />
+              <div className="h-4 w-32 border-2 border-brand-gray bg-brand-gray" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <Link
@@ -54,20 +51,19 @@ export default function DuelsFeedPage() {
         <h1 className="heading-xl">
           DUELOS ABIERTOS
           <span className="label-meta ml-3 align-middle text-muted-foreground">
-            {MOCK_DUELS.length} DISPONIBLES
+            {duels.length} DISPONIBLES
           </span>
         </h1>
       </div>
 
       <div className="space-y-4">
-        {MOCK_DUELS.map((duel) => (
+        {duels.map((duel) => (
           <Link
             key={duel.id}
             href={`/duels/${duel.id}`}
             className="heavy-card group block no-underline"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Left */}
               <div className="flex-1">
                 <div className="mb-1 flex items-center gap-2">
                   <Swords size={16} strokeWidth={3} className="text-brand-jade" />
@@ -79,7 +75,7 @@ export default function DuelsFeedPage() {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="label-meta flex items-center gap-1 text-muted-foreground">
                     <User size={10} strokeWidth={3} />
-                    {duel.challenger}
+                    {duel.challenger.slice(0, 8)}..
                   </span>
                   <span className="label-meta flex items-center gap-1 text-muted-foreground">
                     <Coins size={10} strokeWidth={3} />
@@ -87,12 +83,10 @@ export default function DuelsFeedPage() {
                   </span>
                   <span className="label-meta flex items-center gap-1 text-muted-foreground">
                     <Clock size={10} strokeWidth={3} />
-                    {duel.createdAt}
+                    {timeAgo(duel.createdAt)}
                   </span>
                 </div>
               </div>
-
-              {/* Right */}
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-xs font-bold uppercase tracking-wide">
@@ -111,14 +105,25 @@ export default function DuelsFeedPage() {
         ))}
       </div>
 
-      {MOCK_DUELS.length === 0 && (
+      {duels.length === 0 && (
         <div className="heavy-card py-16 text-center">
           <p className="heading-lg mb-2">NO HAY DUELOS ABIERTOS</p>
-          <p className="label-meta text-muted-foreground">
+          <p className="label-meta mb-4 text-muted-foreground">
             Creá uno o volvé más tarde.
           </p>
+          <Link href="/create" className="btn-jade">
+            CREAR DUELO
+          </Link>
         </div>
       )}
     </div>
   );
+}
+
+function timeAgo(ts: number): string {
+  const min = Math.floor((Date.now() - ts) / 60000);
+  if (min < 1) return "Ahora";
+  if (min < 60) return `Hace ${min} min`;
+  const h = Math.floor(min / 60);
+  return `Hace ${h}h`;
 }

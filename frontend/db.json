@@ -1,0 +1,278 @@
+{
+  "duels": [
+    {
+      "id": "bbce9619-a3c1-4f03-a6a5-647e7abc30e6",
+      "duelId": "9vE10D2xNg0",
+      "onChainDuelId": "2RDJxJTWzUgdPPJQ5xHMahVcgi49cR6ZYZHtm2ocrxnn",
+      "escrowPda": "7jrVMRhS9E8h2VX7fPCs6fV58YK2rxTjYK1RmPZdVUEq",
+      "challengerAta": "EFAh9dmmAxMWr7MhyfLG6FqQ9C5FxnGR43f6ubt9brjU",
+      "status": "ACCEPTED",
+      "challenger": "7oasWmrojhJsL5B8fMs5oWWojQJaW5nmXUj4mpEUQw8A",
+      "opponent": "5Lmeq1uHyToSyzjiExDVuLJWpLBaQxLPUoMEpQAEicG1",
+      "resolver": "35ibw735mSNa61tkB7UK5HAD1BJx8seVTcvKM66UejHp",
+      "courseName": "EMERGENT TECNOLOGIES",
+      "topic": "BLOCKCHAIN BASICS",
+      "stakeAmount": 1,
+      "questionCount": 3,
+      "timeLimit": 180,
+      "questions": [
+        {
+          "id": 1,
+          "text": "¿Cuál es la principal innovación de blockchain en comparación con bases de datos tradicionales?",
+          "options": [
+            "Almacenar datos en una estructura de árbol Merkle",
+            "Eliminar la necesidad de una autoridad central confiable mediante consenso descentralizado",
+            "Utilizar criptografía asimétrica para firmar transacciones",
+            "Permitir la ejecución de código arbitrario en la red"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": 2,
+          "text": "En una blockchain pública, ¿cómo se asegura que un bloque sea válido y se agregue a la cadena?",
+          "options": [
+            "Un administrador central revisa y aprueba cada bloque",
+            "Los nodos alcanzan consenso mediante un mecanismo como Proof of Work o Proof of Stake",
+            "Cada transacción es verificada por un oráculo externo",
+            "El bloque se agrega automáticamente después de un tiempo fijo"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": 3,
+          "text": "¿Qué propiedad de blockchain impide que un atacante modifique un bloque ya confirmado sin alterar todos los bloques posteriores?",
+          "options": [
+            "La inmutabilidad basada en el encadenamiento criptográfico de hashes",
+            "El uso de firmas digitales en cada transacción",
+            "La replicación completa de la cadena en todos los nodos",
+            "La verificación de cada bloque por una autoridad central"
+          ],
+          "correctIndex": 0
+        }
+      ],
+      "challengerAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 0,
+          "answeredAt": 1778392676067
+        },
+        {
+          "questionId": 2,
+          "selectedIndex": 0,
+          "answeredAt": 1778392676572
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 0,
+          "answeredAt": 1778392681136
+        }
+      ],
+      "opponentAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 0,
+          "answeredAt": 1778392667119
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 0,
+          "answeredAt": 1778392668206
+        }
+      ],
+      "challengerScore": null,
+      "opponentScore": null,
+      "winner": null,
+      "createdAt": 1778392595770,
+      "acceptedAt": 1778392622850,
+      "startedAt": 1778392622850,
+      "completedAt": null,
+      "opponentAta": "4pnESVSe43Qi7tcraRmim2TVtbvoKdUDTEsNewJehpS9"
+    },
+    {
+      "id": "3fa8d1cb-5cd5-4b81-96da-ce81f6ab4355",
+      "duelId": "cng4io-FoKw",
+      "onChainDuelId": "3wd2M4xx3NbFWu7ynbbmJ38YuuXfdyyzwVnXhVqL559m",
+      "escrowPda": "6vLZRA5qdh2Re9Fw5ouRTBQncBLigwFUwjYJwep2vuiu",
+      "challengerAta": "EFAh9dmmAxMWr7MhyfLG6FqQ9C5FxnGR43f6ubt9brjU",
+      "status": "COMPLETED",
+      "challenger": "7oasWmrojhJsL5B8fMs5oWWojQJaW5nmXUj4mpEUQw8A",
+      "opponent": "5Lmeq1uHyToSyzjiExDVuLJWpLBaQxLPUoMEpQAEicG1",
+      "resolver": "35ibw735mSNa61tkB7UK5HAD1BJx8seVTcvKM66UejHp",
+      "courseName": "EMERGENT TECNOLOGIES",
+      "topic": "BLOCKCHAIN BASICS",
+      "stakeAmount": 1,
+      "questionCount": 3,
+      "timeLimit": 300,
+      "questions": [
+        {
+          "id": 1,
+          "text": "¿Cuál de las siguientes características es esencial para que una base de datos sea considerada una cadena de bloques (blockchain)?",
+          "options": [
+            "Almacenamiento centralizado de datos",
+            "Inmutabilidad de los registros una vez confirmados",
+            "Uso exclusivo de criptografía simétrica",
+            "Transacciones reversibles por diseño"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": 2,
+          "text": "En el contexto de blockchain, ¿qué función cumple el mecanismo de consenso?",
+          "options": [
+            "Cifrar las transacciones para garantizar privacidad",
+            "Validar y acordar el estado del libro mayor distribuido",
+            "Generar nuevas criptomonedas automáticamente",
+            "Conectar nodos a la red de forma anónima"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": 3,
+          "text": "En una cadena de bloques pública y permissionless, ¿cómo se protege principalmente la red contra ataques de doble gasto?",
+          "options": [
+            "Mediante la verificación de identidad de cada usuario",
+            "A través de un consenso mayoritario que requiere prueba de trabajo o prueba de participación",
+            "Usando una autoridad central que aprueba cada transacción",
+            "Almacenando todas las transacciones en un servidor seguro"
+          ],
+          "correctIndex": 1
+        }
+      ],
+      "challengerAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 0,
+          "answeredAt": 1778392817923
+        },
+        {
+          "questionId": 2,
+          "selectedIndex": 0,
+          "answeredAt": 1778392818992
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 0,
+          "answeredAt": 1778392821088
+        }
+      ],
+      "opponentAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 3,
+          "answeredAt": 1778392766777
+        },
+        {
+          "questionId": 2,
+          "selectedIndex": 1,
+          "answeredAt": 1778392781692
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 2,
+          "answeredAt": 1778392796300
+        }
+      ],
+      "challengerScore": 0,
+      "opponentScore": 1,
+      "winner": "5Lmeq1uHyToSyzjiExDVuLJWpLBaQxLPUoMEpQAEicG1",
+      "createdAt": 1778392744658,
+      "acceptedAt": 1778392756923,
+      "startedAt": 1778392756923,
+      "completedAt": 1778392829307,
+      "opponentAta": "4pnESVSe43Qi7tcraRmim2TVtbvoKdUDTEsNewJehpS9"
+    },
+    {
+      "id": "d5648686-686a-4d55-93c7-44477a29b313",
+      "duelId": "yG4ufiOqPjQ",
+      "onChainDuelId": "GZJkAsW3fBbpuCYi8viUadL6Ln2V7uLy7dPwF9d1ADwg",
+      "escrowPda": "AN8CchJKBDqvzdhaxCP74ZAFZ4jBx5JJEGxGJF6jLZh8",
+      "challengerAta": "4pnESVSe43Qi7tcraRmim2TVtbvoKdUDTEsNewJehpS9",
+      "status": "COMPLETED",
+      "challenger": "5Lmeq1uHyToSyzjiExDVuLJWpLBaQxLPUoMEpQAEicG1",
+      "opponent": "7oasWmrojhJsL5B8fMs5oWWojQJaW5nmXUj4mpEUQw8A",
+      "resolver": "35ibw735mSNa61tkB7UK5HAD1BJx8seVTcvKM66UejHp",
+      "courseName": "EMERGENT TECNOLOGIES",
+      "topic": "ETHEREUM",
+      "stakeAmount": 1,
+      "questionCount": 3,
+      "timeLimit": 300,
+      "questions": [
+        {
+          "id": 1,
+          "text": "¿Qué mecanismo de consenso utiliza actualmente Ethereum después de 'The Merge'?",
+          "options": [
+            "Proof of Work (PoW)",
+            "Proof of Stake (PoS)",
+            "Delegated Proof of Stake (DPoS)",
+            "Proof of Authority (PoA)"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": 2,
+          "text": "¿Qué es un 'smart contract' en Ethereum?",
+          "options": [
+            "Un acuerdo legal firmado digitalmente",
+            "Un programa autoejecutable almacenado en la blockchain",
+            "Un contrato entre mineros para compartir recompensas",
+            "Un tipo de token ERC-20"
+          ],
+          "correctIndex": 1
+        },
+        {
+          "id": 3,
+          "text": "¿Cuál es la principal diferencia entre Ethereum y Bitcoin en términos de funcionalidad?",
+          "options": [
+            "Ethereum permite transacciones más rápidas que Bitcoin",
+            "Ethereum soporta la ejecución de código arbitrario (Turing-completo)",
+            "Bitcoin tiene un suministro limitado mientras que Ethereum no",
+            "Ethereum utiliza un algoritmo de hash diferente"
+          ],
+          "correctIndex": 1
+        }
+      ],
+      "challengerAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 1,
+          "answeredAt": 1778393704699
+        },
+        {
+          "questionId": 2,
+          "selectedIndex": 3,
+          "answeredAt": 1778393706780
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 0,
+          "answeredAt": 1778393710223
+        }
+      ],
+      "opponentAnswers": [
+        {
+          "questionId": 1,
+          "selectedIndex": 1,
+          "answeredAt": 1778393674509
+        },
+        {
+          "questionId": 2,
+          "selectedIndex": 1,
+          "answeredAt": 1778393683264
+        },
+        {
+          "questionId": 3,
+          "selectedIndex": 2,
+          "answeredAt": 1778393695576
+        }
+      ],
+      "challengerScore": 1,
+      "opponentScore": 2,
+      "winner": "7oasWmrojhJsL5B8fMs5oWWojQJaW5nmXUj4mpEUQw8A",
+      "createdAt": 1778393645510,
+      "acceptedAt": 1778393662616,
+      "startedAt": 1778393662616,
+      "completedAt": 1778393726036,
+      "opponentAta": "EFAh9dmmAxMWr7MhyfLG6FqQ9C5FxnGR43f6ubt9brjU"
+    }
+  ]
+}
