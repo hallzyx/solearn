@@ -1,131 +1,122 @@
-# Userflow: Crear Duelo
+# Userflow: Create Duel
 
-> El retador (Usuario A) crea un duelo definiendo curso, tema, garantía, cantidad de preguntas y tiempo límite.
-
----
-
-## Secuencia paso a paso
-
-### Paso 1: Landing y conexión de wallet
-
-| Actor | Acción | Sistema |
-|-------|--------|---------|
-| Usuario A | Abre la dApp en el navegador | El frontend carga la landing page |
-| Usuario A | Hace clic en "Conectar Wallet" | Se abre el modal de selección de wallet (Phantom, Backpack, Solflare, etc.) |
-| Usuario A | Aprueba la conexión en su wallet | La dApp obtiene la `Pubkey` de A y muestra: balance de USDC/SOL, avatar/identicon, botones principales |
-
-**Reglas:**
-- Si el usuario no tiene wallet instalada, se muestra un mensaje con links para instalar Phantom/Backpack.
-- Si el usuario no tiene USDC o SOL suficiente para el stake mínimo, se muestra una advertencia (pero no se bloquea — puede que quiera fondearse después).
-- La wallet permanece conectada durante toda la sesión.
+> The challenger (User A) creates a duel defining the course, topic, stake, question count, and time limit.
 
 ---
 
-### Paso 2: Home — Ver opciones
+## Step-by-Step
 
-| Actor | Acción | Sistema |
+### Step 1: Landing + Wallet Connection
+
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario A | Llega al Home (ya conectado) | Se muestran dos cards principales: |
+| User A | Opens the dApp in browser | Frontend loads the landing page |
+| User A | Clicks "Connect Wallet" | Wallet selection modal opens (Phantom, Backpack, Solflare, etc.) |
+| User A | Approves connection in wallet | dApp obtains A's `Pubkey` and displays: USDC/SOL balance, avatar/identicon, main buttons |
+
+**Rules:**
+- If the user has no wallet installed, show a message with links to install Phantom/Backpack.
+- If the user doesn't have enough USDC or SOL for minimum stake, show a warning (but don't block — they may fund later).
+- The wallet stays connected for the entire session.
+
+---
+
+### Step 2: Home — View Options
+
+| Actor | Action | System |
+|-------|--------|---------|
+| User A | Reaches Home (connected) | Two main cards are shown: |
 
 ```
 ┌──────────────────────────┐   ┌──────────────────────────┐
-│      ⚔️ CREAR DUELO      │   │     🔍 BUSCAR DUELOS     │
+│      ⚔️ CREATE DUEL      │   │     🔍 FIND DUELS        │
 │                          │   │                          │
-│  Retá a alguien a un     │   │  Hay 3 duelos abiertos   │
-│  quiz sobre tu tema.     │   │  esperando rival.         │
+│  Challenge someone to    │   │  3 open duels waiting    │
+│  a quiz on your topic.   │   │  for an opponent.        │
 │                          │   │                          │
-│    [Crear duelo]         │   │    [Ver duelos]          │
+│    [Create duel]         │   │    [View duels]          │
 └──────────────────────────┘   └──────────────────────────┘
 ```
 
-| Usuario A | Hace clic en "Crear duelo" | Navega a la pantalla de creación |
+| User A | Clicks "Create duel" | Navigates to the creation screen |
 
 ---
 
-### Paso 3: Formulario de creación
+### Step 3: Creation Form
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario A | Ve el formulario "Crear duelo" | La UI muestra: |
+| User A | Sees the "Create duel" form | UI displays: |
 
-**Campos del formulario:**
+**Form fields:**
 
-| Campo | Tipo | Ejemplo | Validación |
+| Field | Type | Example | Validation |
 |-------|------|---------|-----------|
-| **Nombre del curso** | Text input | "Tecnologías Emergentes" | Requerido, 3–100 caracteres |
-| **Tema del duelo** | Text input | "Teoría básica de blockchain" | Requerido, 3–200 caracteres |
-| **Monto de garantía** | Selector | 0.5 USDC, 1 USDC, 2 USDC, 5 USDC | Requerido, debe tener balance suficiente |
-| **Número de preguntas** | Selector | 3, 5, 10 | Requerido, opciones predefinidas |
-| **Tiempo límite** | Selector | 3 min, 5 min, 10 min | Requerido, opciones predefinidas |
+| **Course name** | Text input | "Emerging Technologies" | Required, 3–100 characters |
+| **Quiz topic** | Text input | "Basic blockchain theory" | Required, 3–200 characters |
+| **Stake amount** | Selector | 0.5 USDC, 1 USDC, 2 USDC, 5 USDC | Required, must have sufficient balance |
+| **Number of questions** | Selector | 3, 5, 10 | Required, predefined options |
+| **Time limit** | Selector | 3 min, 5 min, 10 min | Required, predefined options |
 
-**Opciones predefinidas (V1):**
+**Predefined options (V1):**
 
-| Parámetro | Opciones |
-|-----------|----------|
+| Parameter | Options |
+|-----------|---------|
 | **Stake** | 0.5 USDC, 1 USDC (default), 2 USDC, 5 USDC |
-| **Preguntas** | 3 (rápido), 5 (default), 10 (completo) |
-| **Tiempo límite** | 3 min (rápido), 5 min (default), 10 min (completo) |
-- 0.5 USDC
-- 1 USDC (default)
-- 2 USDC
-- 5 USDC
-
-**| Usuario A | Selecciona el número de preguntas y el tiempo límite según su preferencia | — |
+| **Questions** | 3 (quick), 5 (default), 10 (full) |
+| **Time limit** | 3 min (quick), 5 min (default), 10 min (full) |
 
 ---
 
-### Paso 3b: Preview del duelo
+### Step 3b: Duel Preview
 
-A medida que completa el formulario, se muestra un preview en tiempo real:
+As the user fills the form, a live preview is shown:
 
 ```
 ┌──────────────────────────────────────────────┐
-│  ⚔️ Preview del duelo                        │
+│  ⚔️ DUEL PREVIEW                             │
 │                                              │
-│  Retador: @alice.sol                         │
-│  Curso: Tecnologías Emergentes               │
-│  Tema: Teoría básica de blockchain           │
-│  💰 1 USDC  │  ❓ 5 preg.  │  ⏱️ 5 min      │
+│  Challenger: @alice.sol                      │
+│  Course: Emerging Technologies               │
+│  Topic: Basic blockchain theory              │
+│  💰 1 USDC  │  ❓ 5 q.  │  ⏱️ 5 min         │
 └──────────────────────────────────────────────┘
 ```
 
-**Estados del formulario:****
+**Form states:**
 
-| Estado | UI |
-|--------|-----|
-| Vacío | Placeholders: "Ej: Tecnologías Emergentes", "Ej: Teoría básica de blockchain" |
-| Completando | Validación en tiempo real (caracteres mínimos, balance suficiente) |
-| Inválido | Borde rojo en campo problemático + mensaje de error debajo |
-| Válido | Botón "Crear duelo" habilitado |
-
-| Usuario A | Completa los campos y selecciona el stake | — |
-| Usuario A | Hace clic en "Crear duelo" | Se dispara la secuencia de creación |
+| State | UI |
+|-------|-----|
+| Empty | Placeholders: "e.g. Emerging Technologies", "e.g. Basic blockchain theory" |
+| Filling | Real-time validation (min characters, sufficient balance) |
+| Invalid | Red border on problematic field + error message below |
+| Valid | "Create duel" button enabled |
 
 ---
 
-### Paso 4: Generación del quiz (backend + IA)
+### Step 4: Quiz Generation (backend + AI)
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | El frontend llama al backend: `POST /api/duels` con `{ course, topic, stake, question_count, time_limit }` |
-| — | — | El backend envía el tema a la IA con un prompt estructurado para generar `question_count` preguntas multiple choice con 4 opciones cada una, incluyendo la respuesta correcta. |
-| — | — | La IA retorna el quiz en formato estructurado (JSON). |
-| — | — | El backend **no retorna las preguntas ni las respuestas correctas al frontend todavía**. Solo crea la entrada del duelo off-chain y devuelve un `duel_id` y los datos necesarios para la transacción on-chain. |
+| — | — | Frontend calls backend: `POST /api/duels` with `{ course, topic, stake, question_count, time_limit }` |
+| — | — | Backend sends the topic to DeepSeek AI with a structured prompt to generate `question_count` multiple-choice questions with 4 options each, including the correct answer. |
+| — | — | AI returns the quiz in structured JSON format. |
+| — | — | Backend **does NOT return questions nor correct answers to the frontend yet**. Only creates the off-chain duel entry and returns a `duel_id` and data needed for the on-chain transaction. |
 
-**Prompt de IA (ejemplo):**
+**AI Prompt (example):**
 ```
-Eres un profesor universitario experto en [tema].
-Genera [question_count] preguntas de opción múltiple (A, B, C, D) sobre [tema] para un 
-examen del curso "[curso]". Cada pregunta debe tener exactamente 4 opciones 
-y una única respuesta correcta claramente indicada. Las preguntas deben 
-evaluar comprensión conceptual, no solo memorización.
+You are a university professor expert in [topic].
+Generate [question_count] multiple-choice questions (A, B, C, D) about [topic] for a
+"[course]" exam. Each question must have exactly 4 options
+and one clearly marked correct answer. Questions should
+test conceptual understanding, not just memorization.
 
-Formato de salida JSON:
+JSON output format:
 {
   "questions": [
     {
-      "text": "¿Qué es un bloque en una blockchain?",
-      "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
+      "text": "What is a block in a blockchain?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_index": 0
     }
   ]
@@ -134,97 +125,97 @@ Formato de salida JSON:
 
 ---
 
-### Paso 5: Creación on-chain (smart contract)
+### Step 5: On-Chain Creation (smart contract)
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | El frontend construye la instrucción para el programa de Solana: `create_duel(stake_amount, question_count, time_limit, duel_id)` |
-| Usuario A | Ve un modal de confirmación: "Vas a crear un duelo sobre [tema] con garantía de 1 USDC. Se bloqueará este monto de tu wallet." | — |
-| Usuario A | Hace clic en "Confirmar" | Se envía la transacción a la wallet de A para firmar |
-| Usuario A | Firma la transacción en su wallet | — |
-| — | — | El programa de Solana: crea la cuenta PDA del duelo con estado `CREATED`, transfiere el stake de A a una cuenta escrow (o token account del PDA), almacena `challenger`, `stake_amount`, `question_count`, `time_limit`, `duel_id`, `created_at`. |
+| — | — | Frontend builds the Solana instruction: `create_duel(stake_amount, question_count, time_limit, duel_id)` |
+| User A | Sees confirmation modal: "You're about to create a duel on [topic] with a 1 USDC stake. This amount will be locked from your wallet." | — |
+| User A | Clicks "Confirm" | Transaction sent to A's wallet for signing |
+| User A | Signs the transaction in their wallet | — |
+| — | — | Solana program: creates the duel PDA with status `CREATED`, transfers A's stake to the escrow token account, stores `challenger`, `stake_amount`, `question_count`, `time_limit`, `duel_id`, `created_at`. |
 
-**Cuentas involucradas en `create_duel`:**
+**Accounts involved in `create_duel`:**
 
-| Cuenta | Rol |
-|--------|-----|
-| `challenger` (signer) | El usuario A, paga la tx y el stake |
-| `duel_account` (PDA) | Cuenta nueva que almacena el estado del duelo |
-| `escrow_token_account` (PDA) | Token account que retiene los fondos durante el duelo |
-| `challenger_token_account` (ATA) | Cuenta de USDC/SOL de A, de donde se debita el stake |
-| `token_program` | Token Program o Token-2022 |
-| `system_program` | Para crear cuentas |
+| Account | Role |
+|---------|------|
+| `challenger` (signer) | User A, pays the tx and the stake |
+| `duel_account` (PDA) | New account storing duel state |
+| `escrow_token_account` (PDA) | Token account holding funds during the duel |
+| `challenger_token_account` (ATA) | A's USDC account, from which the stake is debited |
+| `token_program` | Token Program |
+| `system_program` | For creating accounts |
 
 ---
 
-### Paso 6: Confirmación y link de duelo
+### Step 6: Confirmation and Duel Link
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | Al confirmarse la transacción on-chain, el backend marca el duelo como `CREATED` en la DB off-chain. |
-| Usuario A | Ve la pantalla de confirmación: |
+| — | — | On on-chain confirmation, the backend marks the duel as `CREATED` in the off-chain DB. |
+| User A | Sees the confirmation screen: |
 
 ```
 ┌────────────────────────────────────────┐
-│        ✅ Duelo creado con éxito        │
+│        ✅ Duel created successfully    │
 │                                        │
-│  Curso: Tecnologías Emergentes         │
-│  Tema: Teoría básica de blockchain     │
-│  Garantía: 1 USDC                       │
-│  Preguntas: 5                          │
-│  Tiempo límite: 5 minutos              │
+│  Course: Emerging Technologies         │
+│  Topic: Basic blockchain theory        │
+│  Stake: 1 USDC                         │
+│  Questions: 5                          │
+│  Time limit: 5 minutes                 │
 │                                        │
-│  Compartí este enlace con tu rival:    │
+│  Share this link with your rival:      │
 │  ┌────────────────────────────────────┐ │
 │  │ solearn.app/duel/abc123            │ │
 │  └────────────────────────────────────┘ │
-│  [📋 Copiar enlace]                     │
+│  [📋 Copy link]                         │
 │                                        │
-│  O esperá a que alguien lo acepte       │
-│  desde el feed de duelos abiertos.      │
+│  Or wait for someone to accept it       │
+│  from the open duels feed.              │
 │                                        │
-│       [⚔️ Ver mis duelos]              │
+│       [⚔️ View my duels]              │
 └────────────────────────────────────────┘
 ```
 
-| Usuario A | Copia el enlace y lo comparte por WhatsApp/Telegram/Discord | — |
-| Usuario A | O vuelve al Home a esperar | El duelo aparece en el feed de "Duelos abiertos" para otros usuarios |
+| User A | Copies the link and shares via WhatsApp/Telegram/Discord | — |
+| User A | Or returns to Home to wait | The duel appears in the "Open duels" feed for other users |
 
 ---
 
-### Paso 7 (opcional): Cancelar duelo
+### Step 7 (optional): Cancel Duel
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario A | Desde "Mis duelos", ve su duelo en estado `CREATED` y hace clic en "Cancelar" | — |
-| — | — | El frontend construye `cancel_duel(duel_id)` y pide firma |
-| Usuario A | Firma la transacción | — |
-| — | — | El contrato verifica que el duelo esté en estado `CREATED` y que el signer sea el `challenger`. Libera los fondos de vuelta a A. Cambia estado a `CANCELLED`. |
+| User A | From "My duels", sees their duel in `CREATED` state and clicks "Cancel" | — |
+| — | — | Frontend builds `cancel_duel(duel_id)` and requests signature |
+| User A | Signs the transaction | — |
+| — | — | Contract verifies the duel is in `CREATED` state and the signer is the `challenger`. Releases funds back to A. Changes state to `CANCELLED`. |
 
-**Regla:** Solo se puede cancelar si el duelo está en estado `CREATED` (nadie lo aceptó todavía).
-
----
-
-## Estados de UI durante la creación
-
-| Momento | UI State |
-|---------|----------|
-| Formulario completándose | Inputs activos, botón deshabilitado hasta que todo sea válido |
-| Click en "Crear duelo" | Botón muestra spinner, inputs se deshabilitan |
-| Generando quiz (backend) | Mensaje: "La IA está generando las preguntas..." |
-| Esperando firma de wallet | Modal de wallet abierto (lo maneja el wallet adapter) |
-| Transacción enviada | Mensaje: "Creando duelo en Solana... (tx: 4xK9...)" con link al explorer |
-| Transacción confirmada | Pantalla de éxito con link de duelo |
-| Error en cualquier paso | Toast de error con mensaje específico y botón de reintentar |
+**Rule:** Can only cancel if the duel is in `CREATED` state (no one has accepted yet).
 
 ---
 
-## Edge cases
+## UI States During Creation
 
-| Caso | Comportamiento |
-|------|---------------|
-| Usuario cierra el navegador mientras se genera el quiz | El duelo off-chain queda a medio crear. La tx on-chain no se ejecutó. Se descarta al volver. |
-| La IA falla en generar el quiz | Error mostrado al usuario: "No pudimos generar el quiz. Intentá con un tema más específico." |
-| Usuario rechaza la firma en la wallet | El duelo off-chain queda huérfano. Se muestra mensaje: "Transacción cancelada." |
-| Balance insuficiente detectado en la wallet | El contrato revierte la transacción. Se muestra error antes de enviar la tx si el frontend lo detecta. |
-| Tema ofensivo o inválido | V1: sin filtro. V2: filtro de contenido con IA. |
+| Moment | UI State |
+|--------|----------|
+| Form being filled | Inputs active, button disabled until valid |
+| Click "Create duel" | Button shows spinner, inputs disabled |
+| Generating quiz (backend) | Message: "AI is generating the questions..." |
+| Waiting for wallet signature | Wallet modal open (handled by wallet adapter) |
+| Transaction sent | Message: "Creating duel on Solana... (tx: 4xK9...)" with explorer link |
+| Transaction confirmed | Success screen with duel link |
+| Error at any step | Toast with specific error message and retry button |
+
+---
+
+## Edge Cases
+
+| Case | Behavior |
+|------|----------|
+| User closes browser while quiz is being generated | Off-chain duel is left half-created. On-chain tx was not executed. Discarded on return. |
+| AI fails to generate quiz | Error shown to user: "Could not generate the quiz. Try a more specific topic." |
+| User rejects wallet signature | Off-chain duel is orphaned. Show message: "Transaction cancelled." |
+| Insufficient balance detected in wallet | Contract reverts. Frontend shows error before sending tx if detected. |
+| Offensive or invalid topic | V1: no filter. V2: content filter with AI. |

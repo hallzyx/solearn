@@ -1,106 +1,106 @@
 # Solearn — Product Brief
 
-> Solearn convierte estudiar para la U en un duelo 1vs1 donde ambos apuestan dinero y una IA hace de profesor y árbitro.
+> Solearn turns studying for college into a 1v1 duel where both players stake money and an AI acts as teacher and referee.
 
 ---
 
-## 1. Identidad del producto
+## 1. Product Identity
 
-| Campo | Descripción |
+| Field | Description |
 |-------|-------------|
-| **Nombre** | Solearn |
-| **Tagline** | Duelo de estudio on-chain con IA |
-| **Plataforma** | Solana (devnet para MVP, mainnet post-hackathon) |
-| **Público objetivo** | Estudiantes universitarios (18–25 años) de carreras tecnológicas, negocios digitales, informática |
-| **Tipo de producto** | dApp (aplicación descentralizada) |
+| **Name** | Solearn |
+| **Tagline** | On-chain study duel with AI |
+| **Platform** | Solana (devnet for MVP, mainnet post-hackathon) |
+| **Target audience** | University students (18–25) in tech, digital business, computer science |
+| **Product type** | dApp (decentralized application) |
 
 ---
 
-## 2. Problema
+## 2. Problem
 
-Los estudiantes universitarios procrastinan y les cuesta mantener disciplina para estudiar antes de exámenes. Las herramientas de estudio actuales (flashcards, videos, PDFs, plataformas de quizzes) son **pasivas** y carecen de tres elementos críticos:
+University students procrastinate and struggle to maintain study discipline before exams. Current study tools (flashcards, videos, PDFs, quiz platforms) are **passive** and lack three critical elements:
 
-1. **Accountability real** — No hay consecuencias tangibles si no estudiás. Cerrás la app y listo.
-2. **Competencia directa** — Son experiencias solitarias. No hay un oponente humano que te empuje.
-3. **Adaptación rápida** — Crear contenido de estudio para un curso específico requiere tiempo del profesor o del alumno.
+1. **Real accountability** — No tangible consequences if you don't study. Close the app and you're done.
+2. **Direct competition** — Solitary experiences. No human opponent pushing you.
+3. **Fast adaptation** — Creating study content for a specific course takes time from the teacher or student.
 
-El resultado: el estudio se siente como una carga abstracta, sin urgencia ni consecuencias inmediatas.
-
----
-
-## 3. Solución
-
-**Solearn** convierte el estudio en un duelo 1vs1 con consecuencias financieras:
-
-- Dos estudiantes se retan a un quiz sobre cualquier tema de su curso.
-- Ambos ponen una **garantía** (stake) en USDC o SOL.
-- Una **IA actúa como maestro universal**: genera preguntas de multiple choice sobre el tema que los estudiantes especifiquen y corrige las respuestas.
-- Un **smart contract en Solana** actúa como árbitro justo: bloquea los fondos, recibe los resultados, y paga automáticamente al ganador.
-
-El que estudió más, gana. El que no, pierde plata. Simple, directo, y efectivo.
+The result: studying feels like an abstract burden, with no urgency or immediate consequences.
 
 ---
 
-## 4. Propuesta de valor
+## 3. Solution
 
-| Componente | Valor |
-|------------|-------|
-| **Skin in the game** | Si no estudiás, perdés plata. La accountability es real e inmediata. |
-| **IA como maestro universal** | Cualquier curso, cualquier tema. El estudiante escribe lo que necesita estudiar y la IA genera el quiz al instante. |
-| **Smart contract como árbitro** | No hay "amigo que se corre del pago". El código define quién gana y distribuye automáticamente. |
-| **Competencia 1vs1** | La presión de un oponente humano real. No es contra una máquina, es contra otro estudiante. |
-| **Loop de revancha** | El que pierde quiere revancha. El que gana quiere seguir ganando. Retención orgánica. |
+**Solearn** turns studying into a 1v1 duel with financial consequences:
 
----
+- Two students challenge each other to a quiz on any course topic.
+- Both put up a **stake** in USDC.
+- An **AI acts as a universal teacher**: generates multiple-choice questions on the specified topic and grades the answers.
+- A **Solana smart contract** acts as a fair referee: locks the funds, receives results, and automatically pays the winner.
 
-## 5. Caso de demo (hackathon)
-
-- **Curso**: Tecnologías Emergentes
-- **Tema**: "Teoría básica de blockchain"
-- **Stake**: 1 USDC por jugador
-- **Preguntas**: 5 multiple choice
-- **Resultado esperado**: La IA genera 5 preguntas sobre blockchain, ambos responden, el contrato paga 2 USDC al que acierte más.
+Whoever studied more wins. Whoever didn't loses money. Simple, direct, and effective.
 
 ---
 
-## 6. Feature set — MVP (V1)
+## 4. Value Proposition
 
-### 6.1 Funcionalidades incluidas
+| Component | Value |
+|-----------|-------|
+| **Skin in the game** | If you don't study, you lose money. Accountability is real and immediate. |
+| **AI as universal teacher** | Any course, any topic. The student writes what they need to study and the AI generates the quiz instantly. |
+| **Smart contract as referee** | No "friend who dodges payment". The code determines the winner and distributes automatically. |
+| **1v1 competition** | The pressure of a real human opponent. Not against a machine, against another student. |
+| **Rematch loop** | The loser wants revenge. The winner wants to keep winning. Organic retention. |
 
-| Feature | Descripción |
+---
+
+## 5. Demo Case (hackathon)
+
+- **Course**: Emerging Technologies
+- **Topic**: "Basic blockchain theory"
+- **Stake**: 1 USDC per player
+- **Questions**: 5 multiple choice
+- **Expected result**: AI generates 5 blockchain questions, both answer, contract pays 2 USDC to the best scorer.
+
+---
+
+## 6. Feature Set — MVP (V1)
+
+### 6.1 Included Features
+
+| Feature | Description |
 |---------|-------------|
-| **Conectar wallet** | Integración con Solana wallets (Phantom, Backpack, Solflare) mediante wallet-standard |
-| **Crear duelo** | El retador define: nombre del curso, tema del duelo, monto de garantía, número de preguntas y tiempo límite |
-| **Generar quiz con IA** | Al crear el duelo, la IA genera N preguntas multiple choice con 4 opciones cada una sobre el tema especificado |
-| **Listar duelos abiertos** | Feed de duelos pendientes donde cualquier usuario puede entrar como retado |
-| **Aceptar duelo** | El retado ve los parámetros del duelo y decide entrar, bloqueando su garantía |
-| **Jugar quiz** | Ambos jugadores responden las mismas preguntas (mismo orden en V1) dentro de un tiempo límite |
-| **Corrección off-chain** | La IA/backend corrige las respuestas y calcula el score de cada jugador (0 a N preguntas) |
-| **Resolver duelo on-chain** | El backend envía los scores al contrato, que compara y distribuye los fondos automáticamente |
-| **Pantalla de resultado** | Muestra ganador, scores, y opciones de revancha o nuevo tema |
-| **Timeout por abandono** | Si un jugador no responde dentro del tiempo límite, el otro reclama el pozo completo |
+| **Connect wallet** | Integration with Solana wallets (Phantom, Backpack, Solflare) via wallet-standard |
+| **Create duel** | The challenger defines: course name, duel topic, stake amount, question count, time limit |
+| **AI quiz generation** | On duel creation, AI generates N multiple-choice questions with 4 options each on the specified topic |
+| **List open duels** | Feed of pending duels where any user can enter as the opponent |
+| **Accept duel** | The opponent sees the duel parameters and decides to enter, locking their stake |
+| **Play quiz** | Both players answer the same questions (same order in V1) within a time limit |
+| **Off-chain grading** | The backend corrects answers and computes each player's score (0 to N questions) |
+| **On-chain resolution** | The backend sends scores to the contract, which compares and distributes funds automatically |
+| **Result screen** | Shows winner, scores, and options to rematch or try a new topic |
+| **Timeout for abandonment** | If a player doesn't answer within the time limit, the other claims the full pot |
 
-### 6.2 Limitaciones explícitas de V1
+### 6.2 V1 Explicit Limitations
 
-- Solo preguntas cerradas (multiple choice, 4 opciones).
-- Stake simétrico: ambos ponen exactamente lo mismo.
-- Corrección de IA **off-chain**: el contrato solo recibe los scores finales.
-- El backend actúa como "oráculo de confianza" para la resolución.
-- Sin ranking global, sin historial on-chain completo, sin sistema de reputación.
+- Only closed-ended questions (multiple choice, 4 options).
+- Symmetric stake: both put exactly the same amount.
+- AI grading **off-chain**: the contract only receives final scores.
+- The backend acts as a "trusted oracle" for resolution.
+- No global ranking, no full on-chain history, no reputation system.
 
 ---
 
-## 7. Fuera de alcance para V1 (ideas V2+)
+## 7. Out of Scope for V1 (V2+ Ideas)
 
-- Preguntas abiertas (texto libre) corregidas por IA.
-- Stake asimétrico (un jugador apuesta más que el otro).
-- Torneos con brackets.
-- Ranking global y leaderboard on-chain.
-- Historial completo de duelos on-chain.
-- Sistema de reputación / ELO.
-- Modo de práctica sin stake.
-- Creación de quizzes por parte de profesores (curadas, no IA).
-- Verificación on-chain de respuestas (commit-reveal o zk).
-- Duelos por equipos (2vs2).
-- Integración con LMS universitarios (Moodle, Canvas).
-- Token nativo de gobernanza.
+- Open-ended questions (free text) graded by AI.
+- Asymmetric stake (one player stakes more than the other).
+- Bracket tournaments.
+- Global ranking and on-chain leaderboard.
+- Full duel history on-chain.
+- Reputation / ELO system.
+- Practice mode without stake.
+- Teacher-created quizzes (curated, not AI).
+- On-chain answer verification (commit-reveal or zk).
+- Team duels (2v2).
+- University LMS integration (Moodle, Canvas).
+- Native governance token.

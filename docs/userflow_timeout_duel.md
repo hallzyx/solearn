@@ -1,224 +1,219 @@
-# Userflow: Timeout por Abandono
+# Userflow: Timeout Due to Abandonment
 
-> Mecanismo de seguridad para cuando un jugador abandona el duelo.
-> El jugador activo reclama el pozo completo. El que abandonó pierde su stake.
-
----
-
-## Secuencia paso a paso
-
-### Concepto general
-
-En un duelo, hay dos ventanas de tiempo críticas:
-
-| Fase | Timeout | Qué pasa si expira |
-|------|---------|-------------------|
-| **Esperando rival** | 24 horas desde `CREATED` | El duelo expira. El retador puede reclamar su devolución. |
-| **Quiz en curso** | `time_limit` del duelo desde `IN_PROGRESS` (3, 5 o 10 min según selección del retador) | El jugador que NO respondió (o respondió incompleto) pierde. El otro reclama el pozo. |
-
-Para V1, nos enfocamos principalmente en el timeout durante el quiz, que es el caso más crítico. El timeout de "esperando rival" es un nice-to-have.
+> Security mechanism for when a player abandons the duel.
+> The active player claims the full pot. The player who abandoned loses their stake.
 
 ---
 
-### Escenario: Timeout durante el quiz
+## Step-by-Step
 
-**Premisa:** Ambos jugadores aceptaron el duelo (estado `IN_PROGRESS`). Uno de ellos abandona (no responde, cierra el navegador, se queda sin internet).
+### General Concept
+
+In a duel, there are two critical time windows:
+
+| Phase | Timeout | What Happens on Expiry |
+|-------|---------|----------------------|
+| **Waiting for rival** | 24 hours from `CREATED` | Duel expires. Challenger can claim refund. |
+| **Quiz in progress** | Duel's `time_limit` from `IN_PROGRESS` (3, 5, or 10 min depending on challenger's selection) | The player who DIDN'T answer (or answered incompletely) loses. The other claims the pot. |
+
+For V1, we focus primarily on the quiz timeout (the most critical case). The "waiting for rival" timeout is a nice-to-have.
 
 ---
 
-### Paso 1: Detección del abandono (backend)
+### Scenario: Timeout During the Quiz
 
-| Actor | Acción | Sistema |
+**Premise:** Both players accepted the duel (status `IN_PROGRESS`). One abandons (doesn't answer, closes the browser, loses internet).
+
+---
+
+### Step 1: Abandonment Detection (backend)
+
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | El backend monitorea los duelos en estado `IN_PROGRESS` o `ACCEPTED`. |
-| — | — | Un worker/cron verifica periódicamente (cada 15 segundos): |
+| — | — | Backend monitors duels in `IN_PROGRESS` or `ACCEPTED` state. |
+| — | — | A background check runs periodically: |
 
-**Lógica de detección:**
+**Detection logic:**
 
 ```python
 def check_timeouts():
     active_duels = db.get_duels_in_progress()
-    
+
     for duel in active_duels:
-        # Tiempo desde que el duelo pasó a IN_PROGRESS
+        # Time since the duel moved to IN_PROGRESS
         elapsed = now() - duel.started_at
-        
-        if elapsed > duel.time_limit:  # usa el time_limit configurado por el retador
-            # ¿Ambos terminaron?
+
+        if elapsed > duel.time_limit:  # uses the time_limit set by the challenger
+            # Did both finish?
             if duel.challenger_answers.count < duel.question_count:
-                # Challenger no terminó
+                # Challenger didn't finish
                 resolve_timeout(duel, abandoned='challenger', claimer='opponent')
             elif duel.opponent_answers.count < duel.question_count:
-                # Opponent no terminó
+                # Opponent didn't finish
                 resolve_timeout(duel, abandoned='opponent', claimer='challenger')
 ```
 
-**Reglas de timeout:**
-- Si pasó el `time_limit` del duelo (3, 5 o 10 minutos desde que entró en `IN_PROGRESS`) y un jugador no respondió todas las preguntas, ese jugador es declarado en abandono.
-- El backend calcula el score del jugador que SÍ respondió (aunque sea parcial) para mostrarlo en la UI, pero el resultado del duelo es automáticamente a favor del jugador activo.
-- Las preguntas no respondidas por el abandonador cuentan como incorrectas (0). Las respondidas se corrigen normalmente.
+**Timeout rules:**
+- If the duel's `time_limit` (3, 5, or 10 minutes since entering `IN_PROGRESS`) has passed and one player didn't answer all questions, that player is declared in abandonment.
+- The backend calculates the score of the player who DID answer (even partially) for display, but the duel result automatically favors the active player.
+- Unanswered questions by the abandoning player count as incorrect (0). Answered ones are graded normally.
 
 ---
 
-### Paso 2: Reclamo on-chain (backend → smart contract)
+### Step 2: On-Chain Claim (backend → smart contract)
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | El backend construye y firma la transacción: `claim_timeout(duel_id)` |
-| — | — | La transacción se envía a Solana. |
+| — | — | Backend builds and signs the transaction: `claim_timeout(duel_id)` |
+| — | — | The transaction is sent to Solana. |
 
-**Lógica del contrato en `claim_timeout`:**
+**Contract logic in `claim_timeout`:**
 
 ```rust
 pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
     let duel = &mut ctx.accounts.duel;
-    
-    // Solo el resolver autorizado
+
+    // Only the authorized resolver
     require!(ctx.accounts.resolver.key() == duel.resolver, ErrorCode::Unauthorized);
-    
-    // El duelo debe estar en estado ACCEPTED o IN_PROGRESS
+
+    // The duel must be in ACCEPTED or IN_PROGRESS state
     require!(
         duel.status == DuelStatus::Accepted || duel.status == DuelStatus::InProgress,
         ErrorCode::InvalidStatus
     );
-    
-    // Verificar que realmente pasó el tiempo límite
+
+    // Verify the time limit has actually passed
     let clock = Clock::get()?;
     require!(
-        clock.unix_timestamp >= duel.started_at + duel.time_limit,  # time_limit en segundos
+        clock.unix_timestamp >= duel.started_at + duel.time_limit,
         ErrorCode::TimeoutNotReached
     );
-    
-    // Determinar quién abandonó basado en quién tiene menos respuestas
-    // (esto lo determina el backend y lo pasa como argumento o el contrato
-    //  recibe scores de un oráculo de confianza)
-    
+
     let total_pot = duel.stake_amount * 2;
-    
-    // Transferir todo al jugador activo
-    // La dirección del ganador viene en los argumentos o se infiere
+
+    // Transfer everything to the active player
     transfer_from_escrow_to(&ctx.accounts.escrow, &ctx.accounts.claimer_ata, total_pot)?;
-    
+
     duel.winner = Some(ctx.accounts.claimer.key());
     duel.status = DuelStatus::TimedOut;
-    
+
     Ok(())
 }
 ```
 
-**Cuentas involucradas en `claim_timeout`:**
+**Accounts involved in `claim_timeout`:**
 
-| Cuenta | Rol |
-|--------|-----|
-| `resolver` (signer) | Keypair del backend |
-| `duel_account` (PDA) | Se actualiza estado a `TIMED_OUT` |
-| `escrow_token_account` (PDA) | Origen de los fondos |
-| `claimer_token_account` (ATA) | Destino: el jugador que NO abandonó |
+| Account | Role |
+|---------|------|
+| `resolver` (signer) | Backend keypair |
+| `duel_account` (PDA) | Updated state to `TIMED_OUT` |
+| `escrow_token_account` (PDA) | Source of the funds |
+| `claimer_token_account` (ATA) | Destination: the player who DID NOT abandon |
 | `token_program` | Token Program |
 
 ---
 
-### Paso 3: Notificación a los jugadores
+### Step 3: Notification to Players
 
-**Para el jugador activo (ganador por timeout):**
+**For the active player (winner by timeout):**
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario activo | Está en la pantalla de espera o volvió a abrir la app | El frontend detecta el cambio de estado |
+| Active user | Is on the waiting screen or returns to the app | Frontend detects state change |
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                                                      │
-│               ⏰ ¡Tu rival no respondió!               │
+│               ⏰ Your rival didn't answer!            │
 │                                                      │
-│  @bob.sol no completó el quiz a tiempo.               │
+│  @bob.sol didn't complete the quiz on time.           │
 │                                                      │
-│  Recibiste el pozo completo: 2.0 USDC                 │
+│  You received the full pot: 2.0 USDC                  │
 │                                                      │
-│  Tus respuestas: 3/5                                 │
-│  (aunque no era necesario, ¡bien hecho!)              │
+│  Your answers: 3/5                                   │
+│  (not that it mattered, but well done!)               │
 │                                                      │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  📊 Resumen                                  │    │
-│  │  Curso: Tecnologías Emergentes               │    │
-│  │  Tema: Teoría básica de blockchain           │    │
-│  │  Motivo: Rival no respondió                  │    │
-│  │  Tx: 4xK9...f3a  (Ver en Solscan)           │    │
+│  │  📊 Summary                                 │    │
+│  │  Course: Emerging Technologies               │    │
+│  │  Topic: Basic blockchain theory              │    │
+│  │  Reason: Rival didn't answer                 │    │
+│  │  Tx: 4xK9...f3a  (View on Solscan)          │    │
 │  └──────────────────────────────────────────────┘    │
 │                                                      │
-│  [⚔️ Nuevo duelo]    [📚 Nuevo tema]                 │
+│  [⚔️ New duel]    [📚 New topic]                     │
 │                                                      │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Para el jugador que abandonó:**
+**For the player who abandoned:**
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario que abandonó | Vuelve a abrir la app más tarde | El frontend detecta el estado `TIMED_OUT` |
+| Player who abandoned | Opens the app later | Frontend detects `TIMED_OUT` state |
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                                                      │
-│          ⏰ Se acabó el tiempo                         │
+│          ⏰ Time ran out                               │
 │                                                      │
-│  No respondiste a tiempo. Perdiste tu garantía        │
-│  de 1.0 USDC.                                        │
+│  You didn't answer on time. You lost your stake       │
+│  of 1.0 USDC.                                        │
 │                                                      │
-│  La próxima vez, asegurate de tener tiempo            │
-│  para completar el duelo.                             │
+│  Next time, make sure you have enough time            │
+│  to complete the duel.                                │
 │                                                      │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  📊 Resumen                                  │    │
-│  │  Curso: Tecnologías Emergentes               │    │
-│  │  Tema: Teoría básica de blockchain           │    │
-│  │  Motivo: No respondiste a tiempo             │    │
-│  │  Tx: 4xK9...f3a  (Ver en Solscan)           │    │
+│  │  📊 Summary                                 │    │
+│  │  Course: Emerging Technologies               │    │
+│  │  Topic: Basic blockchain theory              │    │
+│  │  Reason: You didn't answer on time          │    │
+│  │  Tx: 4xK9...f3a  (View on Solscan)          │    │
 │  └──────────────────────────────────────────────┘    │
 │                                                      │
-│  [⚔️ Intentar de nuevo]    [📚 Nuevo tema]           │
+│  [⚔️ Try again]    [📚 New topic]                    │
 │                                                      │
 └──────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Paso 4: Timeout por duelo expirado (sin rival)
+### Step 4: Timeout for Expired Duel (no rival)
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario A | Creó un duelo hace 24 horas y nadie lo aceptó | — |
-| — | — | El backend detecta duelos en estado `CREATED` con más de 24 horas de antigüedad |
-| — | — | Cambia estado a `EXPIRED` off-chain |
-| — | — | El frontend construye la tx: `cancel_duel(duel_id)` (o un instruction específica `expire_duel`) |
-| Usuario A | Firma la transacción | — |
-| — | — | El contrato libera los fondos de vuelta a A. Estado: `EXPIRED`. |
+| User A | Created a duel 24 hours ago and no one accepted | — |
+| — | — | Backend detects duels in `CREATED` state older than 24 hours |
+| — | — | Changes state to `EXPIRED` off-chain |
+| — | — | Frontend builds the tx: `cancel_duel(duel_id)` |
+| User A | Signs the transaction | — |
+| — | — | Contract releases funds back to A. State: `EXPIRED`. |
 
-**Nota V1:** Por simplicidad, el timeout de "sin rival" puede usar la misma instrucción `cancel_duel` que ya existe, sin restricción de tiempo (el propio usuario cancela cuando quiere). El estado `EXPIRED` es informativo en la UI.
+**V1 Note:** For simplicity, the "no rival" timeout can use the existing `cancel_duel` instruction without any time restriction (the user cancels whenever they want). The `EXPIRED` state is informational in the UI.
 
 ---
 
-## Diagrama de estados con timeouts
+## State Diagram with Timeouts
 
 ```
                     ┌─────────┐
-                    │ CREATED │──(A cancela)──→ CANCELLED
+                    │ CREATED │──(A cancels)──→ CANCELLED
                     └────┬────┘
                          │
-                    (B acepta)
+                    (B accepts)
                          │
                     ┌────▼─────┐
                     │ ACCEPTED │
                     └────┬─────┘
                          │
-                    (quiz inicia)
+                    (quiz starts)
                          │
                  ┌───────▼────────┐
                  │  IN_PROGRESS   │
                  └┬──────────────┬┘
                   │              │
-          (ambos terminan)  (timer expira sin
-          y scores enviados)  que uno termine)
+          (both finish)    (timer expires without
+          and scores sent)   one player finishing)
                   │              │
           ┌───────▼──────┐  ┌───▼─────────┐
           │  COMPLETED   │  │  TIMED_OUT   │
@@ -227,23 +222,23 @@ pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
 
 ---
 
-## Consideraciones de seguridad
+## Security Considerations
 
-| Riesgo | Mitigación |
-|--------|-----------|
-| **Frontend manipula el timer** | El timer real lo controla el backend. El timer del frontend es solo visual. El backend es la fuente de verdad para el timeout. |
-| **Jugador responde 1 pregunta y cierra todo para forzar timeout y recuperar** | No recupera. El timeout siempre beneficia al jugador que jugó más. Si el rival respondió aunque sea 1 pregunta más, el rival gana. |
-| **Ambos abandonan** | Edge case raro. Si ninguno responde nada en el `time_limit` del duelo, se considera empate y se devuelve el stake a cada uno (o se penaliza a ambos — decisión de diseño). Para V1: devolución a ambos. |
-| **Ataque de denegación de servicio al backend** | El timeout es una seguridad on-chain. Si el backend se cae, el contrato igual puede ser llamado por cualquier persona después del tiempo límite (con los datos correctos). En V1, solo el backend puede llamarlo. En V2, cualquier usuario puede triggerear el timeout. |
-| **Resolver hace trampa marcando timeout cuando no pasó el tiempo** | El contrato verifica `clock.unix_timestamp >= started_at + TIME_LIMIT`. No se puede timear antes de tiempo. |
+| Risk | Mitigation |
+|------|-----------|
+| **Frontend manipulates the timer** | The real timer is controlled by the backend. The frontend timer is visual only. The backend is the source of truth for timeouts. |
+| **Player answers 1 question and closes everything to force timeout and recover** | They don't recover. Timeout always benefits the player who played more. If the rival answered even 1 more question, the rival wins. |
+| **Both abandon** | Rare edge case. If neither answers anything within the duel's `time_limit`, it's considered a tie and each gets their stake back (or both are penalized — design decision). V1: return to both. |
+| **Denial of service attack on the backend** | Timeout is an on-chain safety net. If the backend goes down, the contract can still be called by anyone after the time limit (with the correct data). V1: only the backend can call it. V2: any user can trigger the timeout. |
+| **Resolver cheats by calling timeout before time has passed** | The contract verifies `clock.unix_timestamp >= started_at + TIME_LIMIT`. Cannot be tricked early. |
 
 ---
 
-## Edge cases
+## Edge Cases
 
-| Caso | Comportamiento |
-|------|---------------|
-| Jugador pierde conexión por 2 min pero vuelve antes del timeout | Puede seguir respondiendo. El timer del backend sigue corriendo. |
-| Jugador responde 4/5 y se va | El backend espera hasta el timeout. Si no vuelve, las 4 respuestas se corrigen y se comparan contra el rival. Si el rival respondió 5/5, gana el rival normalmente (no se aplica timeout porque ambos "terminaron" — el backend cierra el duelo al timeout global aunque falten respuestas). |
-| Duelo resuelto por timeout pero el "ganador" también tenía score 0 | Gana igual. El que abandonó pierde por abandono, no por score. |
-| El backend intenta resolver por timeout pero el contrato ya fue resuelto normalmente | El contrato rechaza la transacción (estado ya no es IN_PROGRESS). El backend detecta el error y no reintenta. |
+| Case | Behavior |
+|------|----------|
+| Player loses connection for 2 min but returns before timeout | Can continue answering. Backend timer keeps running. |
+| Player answers 4/5 and leaves | Backend waits until timeout. If they don't return, the 4 answers are graded and compared against the rival. If the rival answered 5/5, the rival wins normally (no timeout applied because both "finished" — the backend closes the duel at global timeout even if answers are missing). |
+| Duel resolved by timeout but the "winner" also had score 0 | Still wins. The abandoner loses by abandonment, not by score. |
+| Backend tries to resolve by timeout but the contract was already resolved normally | Contract rejects the transaction (state is no longer IN_PROGRESS). Backend detects the error and doesn't retry. |

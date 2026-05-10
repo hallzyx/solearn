@@ -1,175 +1,175 @@
-# Userflow: Unirse a Duelo
+# Userflow: Join Duel
 
-> El retado (Usuario B) encuentra y acepta un duelo existente.
+> The opponent (User B) finds and accepts an existing duel.
 
 ---
 
-## Secuencia paso a paso
+## Step-by-Step
 
-### Paso 1: Descubrimiento del duelo
+### Step 1: Finding the Duel
 
-Hay dos caminos para que el Usuario B encuentre un duelo:
+There are two ways for User B to find a duel:
 
-**Camino A — Feed de duelos abiertos:**
+**Path A — Open duels feed:**
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario B | Ya conectó su wallet. Desde el Home, hace clic en "Buscar duelos" | Se muestra el feed: |
+| User B | Already connected their wallet. From Home, clicks "Find duels" | Feed is displayed: |
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  🔍 Duelos abiertos — 3 disponibles                      │
+│  🔍 Open duels — 3 available                             │
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐  │
-│  │ ⚔️ Tecnologías Emergentes                          │  │
-│  │ 📖 Teoría básica de blockchain                     │  │
-│  │ 💰 1 USDC  │  ❓ 5 preguntas  │  👤 @alice.sol     │  │
-│  │ Creado hace 2 min                                   │  │
-│  │                                        [Aceptar →]  │  │
+│  │ ⚔️ Emerging Technologies                           │  │
+│  │ 📖 Basic blockchain theory                         │  │
+│  │ 💰 1 USDC  │  ❓ 5 questions  │  👤 @alice.sol     │  │
+│  │ Created 2 min ago                                   │  │
+│  │                                        [Accept →]  │  │
 │  └────────────────────────────────────────────────────┘  │
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │ ⚔️ Cloud Computing                                 │  │
 │  │ 📖 AWS vs Azure vs GCP                             │  │
-│  │ 💰 2 USDC  │  ❓ 5 preguntas  │  👤 @bob.sol       │  │
-│  │ Creado hace 15 min                                  │  │
-│  │                                        [Aceptar →]  │  │
+│  │ 💰 2 USDC  │  ❓ 5 questions  │  👤 @bob.sol       │  │
+│  │ Created 15 min ago                                  │  │
+│  │                                        [Accept →]  │  │
 │  └────────────────────────────────────────────────────┘  │
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐  │
-│  │ ⚔️ Inteligencia Artificial                         │  │
-│  │ 📖 Redes neuronales convolucionales                │  │
-│  │ 💰 5 USDC  │  ❓ 5 preguntas  │  👤 @carol.sol     │  │
-│  │ Creado hace 1 hora                                  │  │
-│  │                                        [Aceptar →]  │  │
+│  │ ⚔️ Artificial Intelligence                         │  │
+│  │ 📖 Convolutional neural networks                   │  │
+│  │ 💰 5 USDC  │  ❓ 5 questions  │  👤 @carol.sol     │  │
+│  │ Created 1 hour ago                                  │  │
+│  │                                        [Accept →]  │  │
 │  └────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────┘
 ```
 
-**Camino B — Link directo:**
+**Path B — Direct link:**
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario B | Recibe un enlace `solearn.app/duel/abc123` por WhatsApp/Discord/Telegram | — |
-| Usuario B | Abre el enlace en el navegador | La dApp carga la pantalla de detalle del duelo directamente |
-| Usuario B | Conecta su wallet si no lo había hecho | Misma lógica de conexión |
+| User B | Receives a link `solearn.app/duel/abc123` via WhatsApp/Discord/Telegram | — |
+| User B | Opens the link in their browser | dApp loads the duel detail screen directly |
+| User B | Connects their wallet if not already | Same connection logic |
 
 ---
 
-### Paso 2: Pantalla de detalle del duelo
+### Step 2: Duel Detail Screen
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario B | Ve el detalle completo del duelo | La UI muestra: |
+| User B | Sees the full duel detail | UI shows: |
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│               ⚔️ DETALLE DEL DUELO                   │
+│               ⚔️ DUEL DETAIL                          │
 │                                                      │
-│  Retador: @alice.sol                                 │
-│  Curso: Tecnologías Emergentes                       │
-│  Tema: Teoría básica de blockchain                   │
+│  Challenger: @alice.sol                              │
+│  Course: Emerging Technologies                       │
+│  Topic: Basic blockchain theory                      │
 │                                                      │
 │  ┌────────────────────────────────────────────┐      │
-│  │  💰 Garantía: 1 USDC                       │      │
-│  │  ❓ Preguntas: 5 (multiple choice)          │      │
-│  │  ⏱️  Tiempo límite: 5 minutos              │      │
-│  │  📅 Creado: hace 2 minutos                  │      │
+│  │  💰 Stake: 1 USDC                          │      │
+│  │  ❓ Questions: 5 (multiple choice)          │      │
+│  │  ⏱️  Time limit: 5 minutes                 │      │
+│  │  📅 Created: 2 minutes ago                  │      │
 │  └────────────────────────────────────────────┘      │
 │                                                      │
-│  📋 Reglas:                                          │
-│  • Ambos responden las mismas 5 preguntas.           │
-│  • Gana quien acierte más.                           │
-│  • Si empatan, cada uno recupera su garantía.        │
-│  • Si no respondés a tiempo, perdés tu stake.        │
+│  📋 Rules:                                            │
+│  • Both answer the same 5 questions.                  │
+│  • Highest score wins.                                │
+│  • A tie returns everyones stake.                     │
+│  • Not answering on time forfeits your stake.         │
 │                                                      │
-│  Tu balance: 10.5 USDC                               │
+│  Your balance: 10.5 USDC                              │
 │                                                      │
 │  ┌────────────────────────────────────────────┐      │
-│  │       [⚔️ Aceptar reto — 1 USDC]           │      │
+│  │       [⚔️ Accept challenge — 1 USDC]       │      │
 │  └────────────────────────────────────────────┘      │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Validaciones antes de mostrar el botón "Aceptar":**
+**Validations before showing the "Accept" button:**
 
-| Condición | Acción |
+| Condition | Action |
 |-----------|--------|
-| Balance de B < stake | Botón deshabilitado: "Saldo insuficiente. Necesitás 1 USDC." |
-| B es el mismo que A | Botón oculto: "No podés aceptar tu propio duelo." |
-| Duelo ya expirado | Pantalla muestra: "Este duelo expiró." |
-| Duelo ya aceptado por otro | Pantalla muestra: "Este duelo ya tiene rival." |
-| Wallet no conectada | Botón muestra "Conectar wallet para aceptar" |
+| B's balance < stake | Button disabled: "Insufficient balance. You need 1 USDC." |
+| B is the same as A | Button hidden: "You cannot accept your own duel." |
+| Duel already expired | Screen shows: "This duel has expired." |
+| Duel already accepted by someone else | Screen shows: "This duel already has an opponent." |
+| Wallet not connected | Button shows "Connect wallet to accept" |
 
 ---
 
-### Paso 3: Aceptar el duelo
+### Step 3: Accepting the Duel
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario B | Revisa las condiciones y hace clic en "Aceptar reto" | Se dispara la secuencia |
+| User B | Reviews the conditions and clicks "Accept challenge" | Sequence is triggered |
 
-**Sub-paso 3a — Confirmación en UI:**
+**Sub-step 3a — UI confirmation:**
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | Se muestra un modal de confirmación: "Se bloqueará 1 USDC de tu wallet. Solo recuperarás los fondos si ganás el duelo o si empatan." |
-| Usuario B | Hace clic en "Sí, aceptar" | — |
+| — | — | Confirmation modal shown: "1 USDC will be locked from your wallet. You will only recover your funds if you win or tie." |
+| User B | Clicks "Yes, accept" | — |
 
-**Sub-paso 3b — Transacción on-chain:**
+**Sub-step 3b — On-chain transaction:**
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | El frontend construye la instrucción: `accept_duel(duel_id)` |
-| Usuario B | Firma la transacción en su wallet | — |
-| — | — | El programa de Solana: verifica que el duelo esté en estado `CREATED`, registra a B como `opponent`, transfiere el stake de B a la cuenta escrow, cambia estado a `ACCEPTED`, guarda `accepted_at`. |
+| — | — | Frontend builds the instruction: `accept_duel(duel_id)` |
+| User B | Signs the transaction in their wallet | — |
+| — | — | Solana program: verifies the duel is in `CREATED` state, registers B as `opponent`, transfers B's stake to the escrow account, changes state to `ACCEPTED`, saves `accepted_at`. |
 
-**Cuentas involucradas en `accept_duel`:**
+**Accounts involved in `accept_duel`:**
 
-| Cuenta | Rol |
-|--------|-----|
-| `opponent` (signer) | El usuario B, paga la tx y el stake |
-| `duel_account` (PDA) | Cuenta del duelo, se actualiza con opponent y estado |
-| `escrow_token_account` (PDA) | Recibe el stake de B (ahora tiene 2x el stake) |
-| `opponent_token_account` (ATA) | Cuenta de USDC/SOL de B |
+| Account | Role |
+|---------|------|
+| `opponent` (signer) | User B, pays the tx and the stake |
+| `duel_account` (PDA) | Duel account, updated with opponent and state |
+| `escrow_token_account` (PDA) | Receives B's stake (now holds 2x the stake) |
+| `opponent_token_account` (ATA) | B's USDC/SOL account |
 | `token_program` | Token Program |
 
 ---
 
-### Paso 4: Transición a fase de quiz
+### Step 4: Transition to Quiz Phase
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | Al confirmarse la tx, el backend marca el duelo como `ACCEPTED` en la DB off-chain. |
-| Usuario B | Ve una pantalla de transición | — |
+| — | — | On tx confirmation, backend marks the duel as `ACCEPTED` in the off-chain DB. |
+| User B | Sees a transition screen | — |
 
 ```
 ┌────────────────────────────────────────────┐
-│          ⚔️ ¡Duelo aceptado!               │
+│          ⚔️ Duel accepted!                 │
 │                                            │
 │  @alice.sol vs @bob.sol                    │
-│  Tema: Teoría básica de blockchain         │
+│  Topic: Basic blockchain theory            │
 │                                            │
-│  Preparate... el quiz comienza en breve.   │
+│  Get ready... the quiz starts soon.        │
 │                                            │
-│     [▶️ Comenzar quiz]                     │
+│     [▶️ Start quiz]                        │
 └────────────────────────────────────────────┘
 ```
 
-| Usuario B | Hace clic en "Comenzar quiz" | Navega a la pantalla del quiz |
-| — | — | El backend cambia el estado a `IN_PROGRESS` cuando ambos jugadores están listos (o inmediatamente si se quiere simplificar). |
+| User B | Clicks "Start quiz" | Navigates to the quiz screen |
+| — | — | Backend changes state to `IN_PROGRESS` when both players are ready (or immediately for simplicity). |
 
-**Nota V1:** Para simplificar, el duelo pasa a `IN_PROGRESS` apenas B acepta. Ambos jugadores pueden empezar a responder inmediatamente al entrar a la pantalla de quiz. Ver `userflow_play_quiz.md` para la fase siguiente.
+**V1 Note:** For simplicity, the duel moves to `IN_PROGRESS` as soon as B accepts. Both players can start answering immediately when they enter the quiz screen. See `userflow_play_quiz.md` for the next phase.
 
 ---
 
-### Edge cases
+## Edge Cases
 
-| Caso | Comportamiento |
-|------|---------------|
-| B abre el link pero no tiene wallet | Se muestra CTA para instalar Phantom/Backpack primero |
-| B tiene la wallet pero está en otra red | Se detecta la red y se pide cambiar a Solana devnet/mainnet |
-| Dos usuarios intentan aceptar el mismo duelo al mismo tiempo | El contrato solo acepta al primero que confirma la tx. El segundo recibe error: "Duelo ya aceptado". |
-| B hace clic en aceptar pero rechaza la firma | Vuelve a la pantalla de detalle sin cambios. |
-| El duelo fue cancelado por A mientras B veía el detalle | Al intentar aceptar, el contrato rechaza porque estado != CREATED. Se refresca la UI. |
-| B cierra el navegador después de aceptar pero antes de jugar | El duelo queda en `ACCEPTED`. Si no juega en el tiempo límite, aplica timeout (ver `userflow_timeout_duel.md`). |
+| Case | Behavior |
+|------|----------|
+| B opens the link but has no wallet | Show CTA to install Phantom/Backpack first |
+| B has a wallet but is on the wrong network | Detect the network and ask to switch to Solana devnet/mainnet |
+| Two users try to accept the same duel simultaneously | Contract only accepts the first to confirm the tx. The second gets an error: "Duel already accepted." |
+| B clicks accept but rejects the signature | Returns to the detail screen unchanged. |
+| The duel was cancelled by A while B was viewing the detail | On accept attempt, the contract rejects because state != CREATED. UI refreshes. |
+| B closes the browser after accepting but before playing | The duel stays in `ACCEPTED`. If B doesn't play within the time limit, timeout applies (see `userflow_timeout_duel.md`). |

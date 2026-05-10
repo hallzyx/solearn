@@ -1,203 +1,202 @@
-# Userflow: Jugar Quiz
+# Userflow: Play Quiz
 
-> Ambos jugadores responden las N preguntas del duelo. El temporizador corre. Sistema captura respuestas.
+> Both players answer the N duel questions. The timer runs. The system captures answers.
 
 ---
 
-## Secuencia paso a paso
+## Step-by-Step
 
-### Paso 1: Entrada a la arena
+### Step 1: Entering the Arena
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario | Llega a la pantalla de quiz (desde "Comenzar quiz" o automáticamente) | La UI muestra el encabezado del duelo |
+| User | Arrives at the quiz screen (from "Start quiz" or automatically) | UI shows the duel header |
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  ⚔️ DUELO EN CURSO                                   │
+│  ⚔️ DUEL IN PROGRESS                                 │
 │  @alice.sol vs @bob.sol                              │
-│  Tema: Teoría básica de blockchain                   │
+│  Topic: Basic blockchain theory                      │
 │                                                      │
-│  ⏱️ Tiempo restante: 04:32                           │
-│  ❓ Pregunta 1 de 5 (3 min · 10 preg)               │
+│  ⏱️ Time remaining: 04:32                            │
+│  ❓ Question 1 of 5                                  │
 └──────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Paso 2: Presentación de pregunta
+### Step 2: Question Presentation
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | El frontend obtiene la pregunta del backend: `GET /api/duels/:id/questions?player=alice` |
-| — | — | **Importante:** El backend solo retorna el texto de la pregunta y las 4 opciones. **NUNCA retorna `correct_index`** al frontend durante la fase de juego. |
-| Usuario | Ve la pregunta actual | La UI renderiza: |
+| — | — | Frontend gets the question from the backend: `GET /api/duels/:id/questions?player=alice` |
+| — | — | **Important:** Backend only returns the question text and 4 options. **NEVER returns `correct_index`** to the frontend during gameplay. |
+| User | Sees the current question | UI renders: |
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                                                      │
-│  📝 Pregunta 1:                                      │
-│  ¿Qué es un bloque en una blockchain?                │
+│  📝 Question 1:                                      │
+│  What is a block in a blockchain?                    │
 │                                                      │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  ○ A. Un archivo cifrado que contiene        │    │
-│  │       todas las wallets de la red            │    │
+│  │  ○ A. An encrypted file containing           │    │
+│  │       all network wallets                    │    │
 │  └──────────────────────────────────────────────┘    │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  ○ B. Una estructura de datos que agrupa     │    │
-│  │       transacciones validadas y las enlaza   │    │
-│  │       criptográficamente al bloque anterior  │    │
+│  │  ○ B. A data structure that groups           │    │
+│  │       validated transactions and links them  │    │
+│  │       cryptographically to the previous block│    │
 │  └──────────────────────────────────────────────┘    │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  ○ C. Un smart contract que ejecuta          │    │
-│  │       transacciones automáticamente          │    │
+│  │  ○ C. A smart contract that automatically    │    │
+│  │       executes transactions                  │    │
 │  └──────────────────────────────────────────────┘    │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  ○ D. Un servidor central que valida las     │    │
-│  │       transacciones de la red                │    │
+│  │  ○ D. A central server that validates        │    │
+│  │       network transactions                   │    │
 │  └──────────────────────────────────────────────┘    │
 │                                                      │
-│              [Seleccionar una opción]                 │
+│              [Select an option]                       │
 │                                                      │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Comportamiento de selección:**
-- Las opciones son botones o radios grandes, fáciles de tocar en mobile.
-- Al hacer clic en una opción, se marca visualmente (highlight, borde de color).
-- No hay botón "Confirmar" por pregunta — la selección es instantánea.
-- Una vez seleccionada, se pasa automáticamente a la siguiente pregunta (transición suave de ~300ms).
+**Selection behavior:**
+- Options are large buttons/radios, easy to tap on mobile.
+- Clicking an option highlights it immediately (visual mark, colored border).
+- No "Confirm" button per question — selection is instant.
+- Once selected, it auto-advances to the next question (~300ms smooth transition).
 
-**Si el usuario quiere cambiar su respuesta:**
-| Actor | Acción | Sistema |
+**If the user wants to change their answer:**
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario | Hace clic en "← Anterior" | Vuelve a la pregunta anterior. La respuesta previa aparece seleccionada. |
-| Usuario | Selecciona una opción diferente | Se actualiza la respuesta en el backend. |
+| User | Clicks "← Previous" | Goes back to the previous question. Previous answer appears selected. |
+| User | Selects a different option | Backend answer is updated. |
 
 ---
 
-### Paso 3: Guardado de respuestas
+### Step 3: Answer Saving
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario | Selecciona una opción | El frontend envía inmediatamente al backend: `POST /api/duels/:id/answers` con `{ player, question_id, selected_index }` |
-| — | — | El backend guarda la respuesta en la DB off-chain. |
-| — | — | El frontend también guarda en estado local para funcionar offline y sincronizar al reconectar. |
+| User | Selects an option | Frontend immediately sends to backend: `POST /api/duels/:id/answers` with `{ player, question_id, selected_index }` |
+| — | — | Backend saves the answer in the off-chain DB. |
+| — | — | Frontend also saves in local state for offline resilience and sync on reconnect. |
 
-**Estrategia de guardado:**
-- Cada respuesta se guarda individualmente (no se espera a tener las 5).
-- Si el usuario pierde conexión, las respuestas se guardan en localStorage y se envían al reconectar.
-- Si el usuario cierra el navegador y vuelve, se recuperan las respuestas ya enviadas desde el backend y se muestra la pregunta actual.
+**Save strategy:**
+- Each answer is saved individually (no waiting for all 5).
+- If the user loses connection, answers are saved in localStorage and sent on reconnect.
+- If the user closes the browser and returns, previously sent answers are recovered from the backend and the current question is shown.
 
 ---
 
-### Paso 4: Progreso y temporizador
+### Step 4: Progress and Timer
 
-La UI muestra constantemente:
+The UI constantly shows:
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  ⏱️ 04:32  │  ❓ 3/5 respondidas                     │
+│  ⏱️ 04:32  │  ❓ 3/5 answered                        │
 │                                                      │
-│  Progreso:  ██████████░░░░░░░░░░  3/5               │
-│  Timeout: 5 min · Preguntas: 5                      │
+│  Progress:  ██████████░░░░░░░░░░  3/5                │
+│  Timeout: 5 min · Questions: 5                       │
 └──────────────────────────────────────────────────────┘
 ```
 
-| Elemento | Comportamiento |
-|----------|---------------|
-| **Temporizador** | Cuenta regresiva desde el `time_limit` del duelo (3, 5 o 10 min). A los 60s restantes cambia a color naranja. A los 30s, rojo y con parpadeo. |
-| **Barra de progreso** | Se llena a medida que el jugador responde. Independiente por jugador. |
-| **Indicador de preguntas** | Muestra checkmarks en las ya respondidas, círculo vacío en las pendientes. |
-
----
-
-### Paso 5: Finalización del quiz
-
-Hay dos triggers para finalizar:
-
-**Trigger A — Todas las preguntas respondidas:**
-
-| Actor | Acción | Sistema |
-|-------|--------|---------|
-| Usuario | Responde la última pregunta (la N según `question_count`) | — |
-| — | — | El frontend detecta que respondió todas y muestra pantalla de confirmación |
-| — | — | El backend marca al jugador como `finished` |
-
-**Trigger B — Temporizador expira:**
-
-| Actor | Acción | Sistema |
-|-------|--------|---------|
-| — | — | El temporizador llega a 00:00 |
-| — | — | El frontend bloquea la UI (no se pueden cambiar respuestas) |
-| — | — | Se envían al backend las respuestas que haya (las no respondidas quedan como `null` y cuentan como incorrectas) |
-| — | — | El backend marca al jugador como `finished` |
-
----
-
-### Paso 6: Pantalla de espera
-
-| Actor | Acción | Sistema |
-|-------|--------|---------|
-| Usuario | Terminó su quiz pero el rival todavía está jugando | Se muestra pantalla de espera: |
-
-```
-┌──────────────────────────────────────────────────────┐
-│                                                      │
-│           ✅ ¡Respondiste todas las preguntas!        │
-│                                                      │
-│              ⏳ Esperando a tu rival...               │
-│                                                      │
-│        @bob.sol todavía está respondiendo.            │
-│                                                      │
-│     [████████████████░░░░░░░░░░░░░░] 3/5             │
-│                                                      │
-│     (Tiempo restante total: 03:21)                   │
-│                                                      │
-│     No cierres esta ventana. Los resultados           │
-│     aparecerán apenas ambos terminen.                 │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
-
-**Importante:** La pantalla de espera hace polling cada 5 segundos al backend para saber si el rival terminó. En cuanto ambos están `finished`, se dispara la fase de resolución.
-
----
-
-### Paso 7: Corrección off-chain
-
-| Actor | Acción | Sistema |
-|-------|--------|---------|
-| — | — | El backend detecta que ambos jugadores tienen estado `finished` (o el temporizador global expiró) |
-| — | — | El backend compara las respuestas de cada jugador contra el `correct_index` de cada pregunta (almacenado en el quiz, nunca expuesto al frontend durante el juego) |
-| — | — | Calcula `scoreA` y `scoreB` (0 a `question_count`) |
-| — | — | Almacena los scores en la DB y cambia estado del duelo a `READY_TO_RESOLVE` |
-| — | — | Notifica a ambos frontends (vía polling o WebSocket) que los resultados están listos |
-
----
-
-### Estados de UI durante el quiz
-
-| Momento | UI State |
+| Element | Behavior |
 |---------|----------|
-| Cargando preguntas | Skeleton loader con items dinámicos (3, 5 o 10) |
-| Quiz en curso | Pregunta actual visible, opciones clickeables, timer corriendo |
-| Seleccionando opción | Opción marcada con highlight + transición a siguiente pregunta |
-| Últimos 60 segundos | Timer en naranja, texto: "Queda 1 minuto" |
-| Últimos 30 segundos | Timer en rojo, parpadeo, texto: "Apurate" |
-| Quiz terminado (esperando rival) | Pantalla de espera con progreso del rival |
-| Quiz terminado (ambos listos) | Transición a pantalla de carga: "Calculando resultados..." |
-| Error de conexión | Banner amarillo: "Sin conexión. Tus respuestas se guardan localmente." |
+| **Timer** | Countdown from the duel's `time_limit` (3, 5, or 10 min). Last 60s turns orange, last 30s turns red with pulse. |
+| **Progress bar** | Fills as the player answers. Independent per player. |
+| **Question indicator** | Shows checkmarks on answered ones, empty circles on pending ones. |
 
 ---
 
-### Edge cases
+### Step 5: Quiz Completion
 
-| Caso | Comportamiento |
-|------|---------------|
-| Usuario recarga la página a mitad del quiz | Se recupera el estado desde el backend (preguntas ya respondidas, pregunta actual). El timer sigue corriendo del lado del servidor. |
-| Usuario cierra el navegador y no vuelve | Sus respuestas parciales quedan guardadas. Si no vuelve antes del timeout, aplica abandono (ver `userflow_timeout_duel.md`). |
-| Usuario intenta abrir el quiz en dos pestañas | La segunda pestaña detecta que ya hay una sesión activa y muestra: "Ya tenés el quiz abierto en otra pestaña." |
-| Ambos jugadores terminan al mismo tiempo | El backend procesa la corrección una sola vez (con lock o idempotencia). |
-| El backend falla al guardar una respuesta | El frontend reintenta con exponential backoff. Si después de 3 intentos falla, muestra error y guarda en localStorage. |
-| Un jugador responde todo en 30 segundos, el otro tarda 4:50 | El primero ve la pantalla de espera. El segundo ve el timer normal. La corrección se dispara cuando el segundo termina o el timer expira. |
+Two triggers for completion:
+
+**Trigger A — All questions answered:**
+
+| Actor | Action | System |
+|-------|--------|---------|
+| User | Answers the last question (the Nth per `question_count`) | — |
+| — | — | Frontend detects all answered and shows waiting screen |
+| — | — | Backend marks the player as `finished` |
+
+**Trigger B — Timer expires:**
+
+| Actor | Action | System |
+|-------|--------|---------|
+| — | — | Timer reaches 00:00 |
+| — | — | Frontend locks the UI (answers can't be changed) |
+| — | — | Current answers are sent to the backend (unanswered stay as `null` and count as incorrect) |
+| — | — | Backend marks the player as `finished` |
+
+---
+
+### Step 6: Waiting Screen
+
+| Actor | Action | System |
+|-------|--------|---------|
+| User | Finished their quiz but the rival is still playing | Waiting screen is shown: |
+
+```
+┌──────────────────────────────────────────────────────┐
+│                                                      │
+│           ✅ You answered all questions!              │
+│                                                      │
+│              ⏳ Waiting for your rival...             │
+│                                                      │
+│        @bob.sol is still answering.                   │
+│                                                      │
+│     You will be redirected automatically when         │
+│     they finish.                                     │
+│                                                      │
+│     Don't close this window. The results              │
+│     will appear as soon as both finish.               │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Important:** Cross-tab BroadcastChannel sync instantly redirects both players when both have finished. No polling needed if both tabs are in the same browser.
+
+---
+
+### Step 7: Off-Chain Grading
+
+| Actor | Action | System |
+|-------|--------|---------|
+| — | — | Backend detects both players have finished (or global timer expired) |
+| — | — | Backend compares each player's answers against `correct_index` (stored in the quiz, never exposed to the frontend during play) |
+| — | — | Computes `scoreA` and `scoreB` (0 to `question_count`) |
+| — | — | Stores scores in DB and changes duel status to `READY_TO_RESOLVE` |
+| — | — | Notifies both frontends (via BroadcastChannel or the result page) that results are ready |
+
+---
+
+## UI States During Quiz
+
+| Moment | UI State |
+|--------|----------|
+| Loading questions | Skeleton loader with dynamic items (3, 5, or 10) |
+| Quiz in progress | Current question visible, options clickable, timer running |
+| Selecting option | Option highlighted + transition to next question |
+| Last 60 seconds | Timer orange, text: "1 minute left" |
+| Last 30 seconds | Timer red, pulsing, text: "Hurry up" |
+| Quiz finished (waiting for rival) | Waiting screen with "WAITING FOR YOUR RIVAL" |
+| Quiz finished (both ready) | Transition to result page: "All done!" |
+| Connection error | Yellow banner: "Your answers are saved on the server. Don't close this window." |
+
+---
+
+## Edge Cases
+
+| Case | Behavior |
+|------|----------|
+| User reloads the page mid-quiz | State is restored from the backend (already answered questions, current question). Server-side timer keeps running. |
+| User closes the browser and doesn't return | Partial answers are saved. If they don't return before timeout, abandonment applies (see `userflow_timeout_duel.md`). |
+| User tries to open the quiz in two tabs | Second tab detects active session and shows: "You already have the quiz open in another tab." |
+| Both players finish at the same time | Backend processes grading once (with lock or idempotency). |
+| Backend fails to save an answer | Frontend retries with exponential backoff. After 3 failures, shows error and saves in localStorage. |
+| One player finishes in 30 seconds, the other takes 4:50 | First player sees the waiting screen. The result auto-triggers when both have finished. |

@@ -1,282 +1,257 @@
-# Userflow: Resolver Duelo
+# Userflow: Resolve Duel
 
-> El backend envía los scores al smart contract. El contrato determina al ganador y distribuye los fondos.
+> The backend sends scores to the smart contract. The contract determines the winner and distributes the funds.
 
 ---
 
-## Secuencia paso a paso
+## Step-by-Step
 
-### Paso 1: Corrección de respuestas (backend)
+### Step 1: Answer Grading (backend)
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | Ambos jugadores terminaron el quiz (estado `finished`) o el temporizador global expiró. |
-| — | — | El backend ejecuta la corrección: |
+| — | — | Both players have finished the quiz (status `finished`) or the global timer expired. |
+| — | — | Backend executes grading: |
 
 ```python
 def grade_duel(duel):
     challenger_score = 0
     opponent_score = 0
-    
+
     for question in duel.questions:
         correct = question.correct_index
-        
+
         challenger_answer = duel.challenger_answers.get(question.id)
         if challenger_answer and challenger_answer.selected_index == correct:
             challenger_score += 1
-            
+
         opponent_answer = duel.opponent_answers.get(question.id)
         if opponent_answer and opponent_answer.selected_index == correct:
             opponent_score += 1
-            
+
     return challenger_score, opponent_score
 ```
 
-| — | — | El backend almacena los scores y cambia el estado del duelo a `READY_TO_RESOLVE`. |
+| — | — | Backend stores the scores and changes the duel status to `READY_TO_RESOLVE`. |
 
 ---
 
-### Paso 2: Espera de resultados (frontend)
+### Step 2: Waiting for Results (frontend)
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| Usuario | Está en la pantalla de espera | El frontend hace polling: `GET /api/duels/:id/status` |
-| — | — | Cuando el backend responde con `status: "READY_TO_RESOLVE"` y los scores, el frontend muestra una transición: |
+| User | Is on the waiting screen | Frontend listens for BroadcastChannel events from the other player |
+| — | — | When both have finished, both tabs are redirected to `/duels/:id/result` |
 
 ```
 ┌────────────────────────────────────────────┐
 │                                            │
-│         ⚖️ Calculando resultados...        │
+│         ⚖️ Calculating results...          │
 │                                            │
-│     La IA está corrigiendo las respuestas.  │
+│     DeepSeek AI is grading the answers.     │
 │                                            │
 └────────────────────────────────────────────┘
 ```
 
 ---
 
-### Paso 3: Resolución on-chain (backend → smart contract)
+### Step 3: On-Chain Resolution (backend → smart contract)
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | El backend construye y firma la transacción con su propia keypair (el "resolver"): `resolve_duel(duel_id, score_a, score_b)` |
-| — | — | La transacción se envía a Solana. |
+| — | — | When the user clicks "Calculate Results", the backend calls `POST /api/duels/:id/resolve` |
+| — | — | The backend grades answers using off-chain DB, then builds, signs, and sends `resolve_duel(score_a, score_b)` on-chain |
+| — | — | The transaction is sent to Solana. |
 
-**Lógica del contrato en `resolve_duel`:**
+**Contract logic in `resolve_duel`:**
 
 ```rust
 pub fn resolve_duel(ctx: Context<ResolveDuel>, score_a: u8, score_b: u8) -> Result<()> {
     let duel = &mut ctx.accounts.duel;
-    
-    // Solo el resolver autorizado puede llamar
+
+    // Only the authorized resolver can call
     require!(ctx.accounts.resolver.key() == duel.resolver, ErrorCode::Unauthorized);
-    
-    // Solo se resuelve si está en estado ACCEPTED o IN_PROGRESS
-    require!(duel.status == DuelStatus::Accepted || duel.status == DuelStatus::InProgress, 
+
+    // Only resolve if in ACCEPTED or IN_PROGRESS state
+    require!(duel.status == DuelStatus::Accepted || duel.status == DuelStatus::InProgress,
              ErrorCode::InvalidStatus);
-    
-    // Guardar scores
+
+    // Save scores
     duel.score_a = score_a;
     duel.score_b = score_b;
-    
-    // Determinar ganador y transferir
+
+    // Determine winner and transfer
     let total_pot = duel.stake_amount * 2;
-    
+
     if score_a > score_b {
-        // Challenger gana todo
+        // Challenger wins all
         transfer_from_escrow_to(&ctx.accounts.escrow, &ctx.accounts.challenger_ata, total_pot)?;
         duel.winner = Some(duel.challenger);
     } else if score_b > score_a {
-        // Opponent gana todo
+        // Opponent wins all
         transfer_from_escrow_to(&ctx.accounts.escrow, &ctx.accounts.opponent_ata, total_pot)?;
         duel.winner = Some(duel.opponent);
     } else {
-        // Empate: devolver a cada uno su stake
+        // Tie: return each player their stake
         transfer_from_escrow_to(&ctx.accounts.escrow, &ctx.accounts.challenger_ata, duel.stake_amount)?;
         transfer_from_escrow_to(&ctx.accounts.escrow, &ctx.accounts.opponent_ata, duel.stake_amount)?;
-        duel.winner = None; // None = empate
+        duel.winner = None; // None = tie
     }
-    
+
     duel.status = DuelStatus::Completed;
     Ok(())
 }
 ```
 
-**Cuentas involucradas en `resolve_duel`:**
+**Accounts involved in `resolve_duel`:**
 
-| Cuenta | Rol |
-|--------|-----|
-| `resolver` (signer) | Keypair del backend autorizada para resolver |
-| `duel_account` (PDA) | Estado del duelo, se actualiza con scores y winner |
-| `escrow_token_account` (PDA) | De donde salen los fondos |
-| `challenger_token_account` (ATA) | Destino si A gana o en empate |
-| `opponent_token_account` (ATA) | Destino si B gana o en empate |
+| Account | Role |
+|---------|------|
+| `resolver` (signer) | Backend keypair authorized to resolve |
+| `duel_account` (PDA) | Duel state, updated with scores and winner |
+| `escrow_token_account` (PDA) | Source of the funds |
+| `challenger_token_account` (ATA) | Destination if A wins or tie |
+| `opponent_token_account` (ATA) | Destination if B wins or tie |
 | `token_program` | Token Program |
 
-**¿Por qué el backend paga la tx?**
-- Los jugadores ya pagaron su stake y la tx de creación/aceptación.
-- No queremos que tengan que pagar gas adicional para resolver.
-- El backend como "resolver" es un oráculo de confianza en V1. En V2 se puede descentralizar.
+**Why does the backend pay the tx?**
+- Players already paid their stake and the creation/acceptance tx.
+- We don't want them to pay additional gas for resolution.
+- The backend as "resolver" is a trusted oracle in V1. V2 can decentralize.
 
 ---
 
-### Paso 4: Pantalla de resultado
+### Step 4: Result Screen
 
-| Actor | Acción | Sistema |
+| Actor | Action | System |
 |-------|--------|---------|
-| — | — | La transacción se confirma on-chain. El backend actualiza el estado a `COMPLETED`. |
-| Usuario | El frontend detecta el cambio de estado y muestra la pantalla de resultado | — |
+| — | — | On-chain transaction confirmed. Backend updates status to `COMPLETED`. |
+| User | Frontend detects state change and shows the result screen | — |
 
-**Caso: Victoria (Usuario A ganó)**
+**Case: Win (User A won)**
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                                                      │
-│                   🏆 ¡GANASTE!                        │
+│                   🏆 YOU WIN!                         │
 │                                                      │
-│  Tu score: 4/5                                       │
-│  Score de @bob.sol: 2/5                              │
-│  Preguntas: 5 · Tiempo: 5 min                        │
+│  Your score: 4/5                                     │
+│  @bob.sol's score: 2/5                               │
+│  Questions: 5 · Time: 5 min                          │
 │                                                      │
-│  Recibiste 2.0 USDC en tu wallet.                    │
+│  You received 2.0 USDC in your wallet.               │
 │                                                      │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  📊 Resumen                                  │    │
-│  │  Curso: Tecnologías Emergentes               │    │
-│  │  Tema: Teoría básica de blockchain           │    │
-│  │  Tx: 4xK9...f3a  (Ver en Solscan)           │    │
+│  │  📊 Summary                                 │    │
+│  │  Course: Emerging Technologies               │    │
+│  │  Topic: Basic blockchain theory              │    │
+│  │  Tx: 4xK9...f3a  (View on Solscan)          │    │
 │  └──────────────────────────────────────────────┘    │
 │                                                      │
-│  [⚔️ Pedir revancha]    [📚 Nuevo tema]              │
+│  [⚔️ Rematch]    [📚 New topic]                      │
 │                                                      │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Caso: Derrota (Usuario B perdió)**
+**Case: Lose (User B lost)**
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                                                      │
-│                   📚 Perdiste el duelo                 │
+│                   📚 You lost the duel                 │
 │                                                      │
-│  Tu score: 2/5                                       │
-│  Score de @alice.sol: 4/5                            │
-│  Preguntas: 5 · Tiempo: 5 min                        │
+│  Your score: 2/5                                     │
+│  @alice.sol's score: 4/5                             │
+│  Questions: 5 · Time: 5 min                          │
 │                                                      │
-│  Perdiste 1.0 USDC, pero ahora sabés qué repasar     │
-│  antes del examen. 💪                                │
+│  You lost 1.0 USDC, but now you know what to study 💪│
 │                                                      │
 │  ┌──────────────────────────────────────────────┐    │
-│  │  📊 Resumen                                  │    │
-│  │  Curso: Tecnologías Emergentes               │    │
-│  │  Tema: Teoría básica de blockchain           │    │
-│  │  Tx: 4xK9...f3a  (Ver en Solscan)           │    │
+│  │  📊 Summary                                 │    │
+│  │  Course: Emerging Technologies               │    │
+│  │  Topic: Basic blockchain theory              │    │
+│  │  Tx: 4xK9...f3a  (View on Solscan)          │    │
 │  └──────────────────────────────────────────────┘    │
 │                                                      │
-│  [⚔️ Pedir revancha]    [📚 Nuevo tema]              │
+│  [⚔️ Rematch]    [📚 New topic]                      │
 │                                                      │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Caso: Empate**
+**Case: Tie**
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                                                      │
-│                   🤝 ¡Empate!                         │
+│                   🤝 It's a tie!                      │
 │                                                      │
-│  Ambos sacaron 3/5                                   │
+│  Both scored 3/5                                     │
 │                                                      │
-│  Preguntas: 5 · Tiempo: 5 min                        │
+│  Questions: 5 · Time: 5 min                          │
 │                                                      │
-│  Recuperaste tu garantía de 1.0 USDC.                │
+│  You got your 1.0 USDC stake back.                   │
 │                                                      │
-│  [⚔️ Pedir revancha]    [📚 Nuevo tema]              │
+│  [⚔️ Rematch]    [📚 New topic]                      │
 │                                                      │
-└──────────────────────────────────────────────────────┘
-```
-
----
-
-### Paso 5: Acciones post-resultado
-
-| Botón | Comportamiento |
-|-------|---------------|
-| **Pedir revancha** | Crea un nuevo duelo con el mismo curso y tema. Navega al formulario de creación pre-rellenado con los mismos datos. |
-| **Nuevo tema** | Navega al formulario de creación limpio para empezar un duelo sobre otro tema. |
-| **Ver en Solscan** | Link externo al explorador de Solana para ver la transacción de resolución. |
-
----
-
-### Paso 6: Historial de duelos
-
-Desde el Home, el usuario puede ver su historial:
-
-```
-┌──────────────────────────────────────────────────────┐
-│  📊 TU HISTORIAL                                     │
-│                                                      │
-│  Victorias: 7  │  Derrotas: 3  │  Empates: 1         │
-│  Ganancias totales: +4.5 USDC                        │
-│                                                      │
-│  ┌──────────────────────────────────────────────┐    │
-│  │ 🏆 Blockchain — 4/5 vs 2/5 — +1 USDC        │    │
-│  │    hace 10 min                                │    │
-│  └──────────────────────────────────────────────┘    │
-│  ┌──────────────────────────────────────────────┐    │
-│  │ 📚 Cloud — 1/5 vs 5/5 — -2 USDC              │    │
-│  │    hace 2 horas                               │    │
-│  └──────────────────────────────────────────────┘    │
-│  ┌──────────────────────────────────────────────┐    │
-│  │ 🤝 IA — 3/5 vs 3/5 — 0 USDC                  │    │
-│  │    hace 1 día                                 │    │
-│  └──────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Diagrama de secuencia completo (resolve)
+### Step 5: Post-Result Actions
+
+| Button | Behavior |
+|--------|----------|
+| **Rematch** | Creates a new duel with the same course and topic. Navigates to the creation form pre-filled. |
+| **New topic** | Navigates to a clean creation form to start a duel on a different topic. |
+| **View on Solscan** | External link to Solana explorer for the resolution transaction. |
+| **AI Explanation — 0.1 USDC** | Pays 0.1 USDC via wallet, then generates an AI explanation of all questions and answers (text + ElevenLabs audio). |
+
+---
+
+### Step 6: Answer Review
+
+After the duel is resolved, both players see their answers marked:
+- Green = correct answer
+- Red = their wrong answer
+- Each question shows which option was the correct one and which the player selected
+
+---
+
+## Sequence Diagram (resolve)
 
 ```
-Usuario A       Frontend A      Backend         Contrato        Frontend B      Usuario B
+User A       Frontend A      Backend         Contract        Frontend B      User B
     |               |               |               |               |               |
-    |  terminé quiz |               |               |               |               |
-    |-------------->|               |               |               |               |
-    |               | POST /answers |               |               |               |
+    |   finished    |               |               |               |   finished    |
+    |-------------->|               |               |               |<--------------|
+    |               | POST /answers |               |               | POST /answers |
+    |               |-------------->|               |               |-------------->|
+    |               |               |               |               |               |
+    |               |               | both finished → grade scores                 |
+    |               |               |               |               |               |
+    |  redirected   |               |               |               |  redirected   |
+    |<--------------|               |               |               |-------------->|
+    |               |               |               |               |               |
+    |               |   resolve_duel|               |               |               |
     |               |-------------->|               |               |               |
-    |               |               |               |               |  terminé quiz |
-    |               |               |               |               |<--------------|
-    |               |               |               |               | POST /answers |
-    |               |               |<--------------|---------------|               |
-    |               |               |               |               |               |
-    |               |               | ambos finished → calcular scores              |
-    |               |               |               |               |               |
-    |               |  polling...   |               |               |  polling...   |
-    |               |<------------->|               |               |<------------->|
-    |               |               |               |               |               |
-    |               |               | resolve_duel  |               |               |
-    |               |               |-------------->|               |               |
-    |               |               |               | distribuir    |               |
-    |               |               |               | fondos        |               |
+    |               |               | distribute    |               |               |
+    |               |               | funds         |               |               |
     |               |               |<--------------|               |               |
     |               |               |               |               |               |
-    |               | status: COMPLETED             |               |               |
-    |               |<--------------|-------------->|               |               |
-    |               |               |               |               |               |
-    |  resultado    |               |               |  resultado    |               |
+    |   result      |               |               |   result      |               |
     |<--------------|               |               |-------------->|               |
 ```
 
 ---
 
-## Edge cases
+## Edge Cases
 
-| Caso | Comportamiento |
-|------|---------------|
-| El backend falla al enviar `resolve_duel` | Reintenta con backoff exponencial. El duelo queda en `READY_TO_RESOLVE`. Los frontends siguen mostrando pantalla de espera. |
-| El contrato revierte `resolve_duel` (scores inválidos) | El backend registra el error, notifica a los frontends con mensaje genérico: "Error al procesar el resultado. Reintentando..." |
-| Un jugador cierra el navegador antes de ver el resultado | Al volver a abrir la app y conectar la wallet, ve el resultado automáticamente (el estado está en la DB y on-chain). |
-| Intento de doble resolución | El contrato rechaza porque el estado ya es `COMPLETED`. El backend detecta que ya fue resuelto y simplemente notifica a los frontends. |
-| El backend se cae antes de resolver | El duelo queda en `READY_TO_RESOLVE`. Al reiniciar el backend, procesa los duelos pendientes. |
-| Jugador no está de acuerdo con la corrección | V1: no hay mecanismo de disputa. Se muestra disclaimer en la UI: "La corrección es realizada por IA y puede no ser perfecta." V2: se puede agregar revisión comunitaria o commit-reveal. |
+| Case | Behavior |
+|------|----------|
+| Backend fails to send `resolve_duel` | Retries with exponential backoff. Duel stays in `READY_TO_RESOLVE`. Frontends continue showing waiting screen. |
+| Contract reverts `resolve_duel` (invalid scores) | Backend logs the error, notifies frontends with generic message. |
+| A player closes the browser before seeing results | On returning, the result page auto-loads (state is in DB and on-chain). |
+| Double resolution attempt | Contract rejects because state is already `COMPLETED`. Backend detects and just notifies frontends. |
+| Backend goes down before resolving | Duel stays in `READY_TO_RESOLVE`. On restart, backend processes pending duels. |
+| Player disagrees with grading | V1: no dispute mechanism. V2: community review or commit-reveal. |
